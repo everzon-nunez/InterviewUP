@@ -1,0 +1,2291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="description"
+    content="InterviewUP: practica entrevistas laborales, organiza tus respuestas y revisa tu progreso."
+  >
+
+  <meta name="theme-color" content="#2563eb">
+
+  <title>InterviewUP | Practica tu próxima entrevista</title>
+
+  <link rel="stylesheet" href="../css/styles.css">
+  <script src="../js/main.js" defer></script>
+</head>
+
+<body>
+  <!-- Acceso directo para personas que navegan con teclado. -->
+  <a class="saltar-contenido" href="#contenido-principal">
+    Saltar al contenido principal
+  </a>
+
+  <!-- ENCABEZADO: navegación superior del diseño de escritorio. -->
+  <header class="cabecera">
+    <div class="cabecera__contenido contenedor">
+
+      <a
+        class="marca"
+        href="#inicio"
+        data-navegar="inicio"
+        aria-label="InterviewUP, ir al inicio"
+      >
+        <span class="marca__icono" aria-hidden="true">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            focusable="false"
+          >
+            <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+            <path d="M5 10v2a7 7 0 0 0 14 0v-2"></path>
+            <path d="M12 19v3M8 22h8"></path>
+          </svg>
+        </span>
+
+        <span class="marca__nombre">
+          Interview<span class="marca__acento">UP</span>
+        </span>
+      </a>
+
+      <button
+        class="boton-menu"
+        id="boton-menu"
+        type="button"
+        aria-controls="navegacion-principal"
+        aria-expanded="false"
+      >
+        <span aria-hidden="true">☰</span>
+        <span>Menú</span>
+      </button>
+
+      <nav
+        class="navegacion"
+        id="navegacion-principal"
+        aria-label="Navegación principal"
+      >
+        <ul class="navegacion__lista">
+          <li class="navegacion__accion-movil">
+            <a class="navegacion__enlace" href="#configuracion"
+               data-navegar="configuracion">Nueva simulación</a>
+          </li>
+          <li>
+            <a
+              class="navegacion__enlace"
+              href="#inicio"
+              data-navegar="inicio"
+              aria-current="page"
+            >
+              Dashboard
+            </a>
+          </li>
+
+          <li>
+            <a
+              class="navegacion__enlace"
+              href="#historial"
+              data-navegar="historial"
+            >
+              Mis prácticas
+            </a>
+          </li>
+
+          <li>
+            <a
+              class="navegacion__enlace"
+              href="#banco"
+              data-navegar="banco"
+            >
+              Banco de preguntas
+            </a>
+          </li>
+
+          <li>
+            <a
+              class="navegacion__enlace"
+              href="#resultados"
+              data-navegar="resultados"
+            >
+              Mis resultados
+            </a>
+          </li>
+
+          <li>
+            <a
+              class="navegacion__enlace"
+              href="#ayuda"
+              data-navegar="ayuda"
+            >
+              Ayuda
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="cabecera__acciones">
+        <a
+          class="boton boton--primario boton--compacto"
+          href="#configuracion"
+          data-navegar="configuracion"
+        >
+          <span aria-hidden="true">+</span>
+          Nueva simulación
+        </a>
+
+        <a
+          class="avatar"
+          href="#perfil"
+          data-navegar="perfil"
+          aria-label="Abrir mi información personal"
+        >
+          <span id="avatar-iniciales" aria-hidden="true">UP</span>
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Mensajes generales de guardado, actualización y otras acciones. -->
+  <div id="anuncio" class="solo-lectores" role="status" aria-atomic="true"></div>
+
+  <div
+    class="notificacion"
+    id="notificacion"
+    aria-hidden="true"
+  ></div>
+
+  <main
+    class="contenido-principal contenedor"
+    id="contenido-principal"
+    tabindex="-1"
+  >
+
+    <!-- ======================================================
+         INICIO / DASHBOARD
+         ====================================================== -->
+    <section
+      class="vista vista--activa"
+      id="inicio"
+      aria-labelledby="titulo-inicio"
+      data-vista
+    >
+      <div class="bienvenida">
+        <div class="bienvenida__texto">
+          <h1 id="titulo-inicio" tabindex="-1">
+            ¡Bienvenido a InterviewUP!
+          </h1>
+
+          <p>Continúa preparando tu próxima entrevista.</p>
+        </div>
+
+        <a
+          class="boton boton--blanco"
+          href="#configuracion"
+          data-navegar="configuracion"
+        >
+          <span aria-hidden="true">+</span>
+          Nueva simulación
+        </a>
+      </div>
+
+      <div class="encabezado-seccion">
+        <h2>Tu progreso general</h2>
+
+        <a href="#historial" data-navegar="historial">
+          Ver detalle
+        </a>
+      </div>
+
+      <div class="estadisticas">
+        <article class="tarjeta tarjeta-estadistica">
+          <span class="tarjeta-estadistica__icono" aria-hidden="true">
+            ✓
+          </span>
+
+          <div>
+            <p class="tarjeta-estadistica__valor" id="total-practicas">
+              0
+            </p>
+            <h3>Prácticas realizadas</h3>
+          </div>
+        </article>
+
+        <article class="tarjeta tarjeta-estadistica">
+          <span class="tarjeta-estadistica__icono" aria-hidden="true">
+            ◷
+          </span>
+
+          <div>
+            <p class="tarjeta-estadistica__valor" id="tiempo-total">
+              0 min
+            </p>
+            <h3>Tiempo de práctica</h3>
+          </div>
+        </article>
+
+        <article class="tarjeta tarjeta-estadistica">
+          <span class="tarjeta-estadistica__icono" aria-hidden="true">
+            ↗
+          </span>
+
+          <div>
+            <p class="tarjeta-estadistica__valor" id="mayor-mejora">
+              Sin datos
+            </p>
+            <h3>Mayor mejora</h3>
+          </div>
+        </article>
+
+        <article class="tarjeta tarjeta-estadistica">
+          <span class="tarjeta-estadistica__icono" aria-hidden="true">
+            ▦
+          </span>
+
+          <div>
+            <p class="tarjeta-estadistica__valor" id="ultima-practica">
+              Sin prácticas
+            </p>
+            <h3>Última práctica</h3>
+          </div>
+        </article>
+      </div>
+
+      <div class="dashboard-grid">
+        <section
+          class="panel"
+          aria-labelledby="titulo-continuar"
+        >
+          <div class="encabezado-seccion">
+            <h2 id="titulo-continuar">Continúa practicando</h2>
+          </div>
+
+          <div class="lista-recomendaciones">
+            <article class="tarjeta tarjeta-recomendacion">
+              <div>
+                <h3>Practica respuestas con el método STAR</h3>
+
+                <p>
+                  Organiza tus ejemplos en Situación, Tarea,
+                  Acción y Resultado.
+                </p>
+
+                <span class="etiqueta">Estructura</span>
+              </div>
+
+              <button
+                class="boton boton--texto"
+                type="button"
+                data-practicar-tema="personales"
+              >
+                Practicar
+                <span aria-hidden="true">→</span>
+              </button>
+            </article>
+
+            <article class="tarjeta tarjeta-recomendacion">
+              <div>
+                <h3>Trabaja preguntas técnicas</h3>
+
+                <p>
+                  Repasa conocimientos y resuelve casos
+                  relacionados con el puesto que te interesa.
+                </p>
+
+                <span class="etiqueta etiqueta--morada">
+                  Técnica
+                </span>
+              </div>
+
+              <button
+                class="boton boton--texto"
+                type="button"
+                data-practicar-tema="conocimientos"
+              >
+                Practicar
+                <span aria-hidden="true">→</span>
+              </button>
+            </article>
+
+            <article class="tarjeta tarjeta-recomendacion">
+              <div>
+                <h3>Prepara ejemplos de tus experiencias</h3>
+
+                <p>
+                  Utiliza proyectos, cursos y prácticas
+                  para explicar tus habilidades.
+                </p>
+
+                <span class="etiqueta etiqueta--celeste">
+                  Experiencias
+                </span>
+              </div>
+
+              <a
+                class="boton boton--texto"
+                href="#perfil"
+                data-navegar="perfil"
+              >
+                Preparar
+                <span aria-hidden="true">→</span>
+              </a>
+            </article>
+          </div>
+
+          <article
+            class="tarjeta tarjeta-pendiente"
+            id="practica-pendiente-inicio"
+            hidden
+          >
+            <h3>Tienes una práctica pendiente</h3>
+
+            <p id="descripcion-pendiente"></p>
+
+            <button
+              class="boton boton--primario"
+              id="continuar-pendiente-inicio"
+              type="button"
+            >
+              Continuar práctica
+            </button>
+          </article>
+        </section>
+
+        <div class="dashboard-grid__secundario">
+          <section
+            class="tarjeta"
+            aria-labelledby="titulo-practicas-recientes"
+          >
+            <div class="encabezado-seccion">
+              <h2 id="titulo-practicas-recientes">
+                Prácticas recientes
+              </h2>
+
+              <a href="#historial" data-navegar="historial">
+                Ver todas
+              </a>
+            </div>
+
+            <div id="practicas-recientes">
+              <p class="estado-vacio">
+                Todavía no tienes prácticas registradas.
+                Comienza tu primera simulación.
+              </p>
+            </div>
+          </section>
+
+          <section
+            class="tarjeta"
+            aria-labelledby="titulo-progreso-reciente"
+          >
+            <div class="encabezado-seccion">
+              <h2 id="titulo-progreso-reciente">
+                Tu progreso reciente
+              </h2>
+
+              <a href="#comparacion" data-navegar="comparacion">
+                Comparar intentos
+              </a>
+            </div>
+
+            <div id="progreso-reciente">
+              <p class="estado-vacio">
+                Completa dos prácticas para revisar tus cambios.
+              </p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================
+         CONFIGURACIÓN
+         HU-01, HU-09, HU-10, HU-23
+         ====================================================== -->
+    <section
+      class="vista"
+      id="configuracion"
+      aria-labelledby="titulo-configuracion"
+      data-vista
+      hidden
+    >
+      <div class="encabezado-pagina">
+        <div>
+          <h1 id="titulo-configuracion" tabindex="-1">
+            Configura tu entrevista
+          </h1>
+
+          <p>
+            Personaliza la sesión según el puesto y tus objetivos.
+          </p>
+        </div>
+      </div>
+
+      <form id="formulario-configuracion">
+        <div class="configuracion-grid">
+          <div class="configuracion-grid__campos">
+
+            <section class="tarjeta">
+              <h2>Configuración de la práctica</h2>
+
+              <p class="texto-secundario">
+                Los campos identificados como obligatorios
+                deben completarse antes de iniciar.
+              </p>
+
+              <div class="campo">
+                <label for="puesto">
+                  Puesto al que postulas
+                  <span class="campo__requerido">(obligatorio)</span>
+                </label>
+
+                <select
+                  id="puesto"
+                  name="puesto"
+                  required
+                  aria-describedby="ayuda-puesto error-puesto"
+                >
+                  <option value="">Selecciona un puesto</option>
+                  <option value="desarrollador-junior">
+                    Desarrollador Junior
+                  </option>
+                  <option value="practicante-sistemas">
+                    Practicante de Sistemas
+                  </option>
+                  <option value="analista-datos-junior">
+                    Analista de Datos Junior
+                  </option>
+                  <option value="soporte-ti">
+                    Soporte TI
+                  </option>
+                  <option value="asistente-administrativo">
+                    Asistente Administrativo
+                  </option>
+                </select>
+
+                <p class="campo__ayuda" id="ayuda-puesto">
+                  Las preguntas se seleccionarán del banco
+                  correspondiente al puesto.
+                </p>
+
+                <p
+                  class="campo__error"
+                  id="error-puesto"
+                  hidden
+                ></p>
+              </div>
+            </section>
+
+            <fieldset class="tarjeta grupo-opciones">
+              <legend>Contexto de postulación</legend>
+
+              <div class="opciones opciones--contexto">
+                <label class="opcion">
+                  <input
+                    type="radio"
+                    name="contexto"
+                    value="practicas"
+                    required
+                  >
+                  <span>Prácticas preprofesionales</span>
+                </label>
+
+                <label class="opcion">
+                  <input
+                    type="radio"
+                    name="contexto"
+                    value="primer-empleo"
+                  >
+                  <span>Primer empleo</span>
+                </label>
+
+                <label class="opcion">
+                  <input
+                    type="radio"
+                    name="contexto"
+                    value="con-experiencia"
+                  >
+                  <span>Ya tengo experiencia laboral</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <section class="tarjeta">
+              <div class="encabezado-seccion">
+                <h2>Información personal</h2>
+                <span class="etiqueta">Opcional</span>
+              </div>
+
+              <p>
+                Puedes preparar ejemplos sobre tus estudios,
+                proyectos y experiencias antes de practicar.
+              </p>
+
+              <a
+                class="boton boton--secundario"
+                href="#perfil"
+                data-navegar="perfil"
+              >
+                Completar mi información
+              </a>
+
+              <p
+                class="texto-secundario"
+                id="estado-informacion-personal"
+              >
+                Aún no has registrado información personal.
+              </p>
+            </section>
+
+            <fieldset class="tarjeta grupo-opciones">
+              <legend>Tema de práctica</legend>
+
+              <div class="opciones opciones--temas">
+                <label class="opcion">
+                  <input
+                    type="radio"
+                    name="tema"
+                    value="personales"
+                    required
+                  >
+                  <span>Personal y experiencias</span>
+                </label>
+
+                <label class="opcion">
+                  <input
+                    type="radio"
+                    name="tema"
+                    value="situacionales"
+                  >
+                  <span>Situacional</span>
+                </label>
+
+                <label class="opcion">
+                  <input
+                    type="radio"
+                    name="tema"
+                    value="conocimientos"
+                  >
+                  <span>Conocimientos profesionales</span>
+                </label>
+
+                <label class="opcion">
+                  <input
+                    type="radio"
+                    name="tema"
+                    value="mixta"
+                  >
+                  <span>Mixta</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="tarjeta grupo-opciones">
+              <legend>Cantidad de preguntas</legend>
+
+              <div class="opciones opciones--cantidad">
+                <label class="opcion">
+                  <input
+                    type="radio"
+                    name="cantidad"
+                    value="5"
+                    checked
+                  >
+                  <span>5 preguntas</span>
+                </label>
+
+                <label class="opcion">
+                  <input
+                    type="radio"
+                    name="cantidad"
+                    value="10"
+                  >
+                  <span>10 preguntas</span>
+                </label>
+
+                <label class="opcion">
+                  <input
+                    type="radio"
+                    name="cantidad"
+                    value="personalizada"
+                  >
+                  <span>Personalizada</span>
+                </label>
+              </div>
+
+              <div class="campo" id="campo-cantidad-personalizada" hidden>
+                <label for="cantidad-personalizada">
+                  Número de preguntas
+                </label>
+
+                <input
+                  id="cantidad-personalizada"
+                  name="cantidadPersonalizada"
+                  type="number"
+                  min="1"
+                  step="1"
+                  aria-describedby="ayuda-cantidad"
+                >
+
+                <p class="campo__ayuda" id="ayuda-cantidad">
+                  La cantidad dependerá de las preguntas disponibles
+                  para la configuración elegida.
+                </p>
+              </div>
+            </fieldset>
+
+            <section class="tarjeta tarjeta-guia">
+              <h2>¿Todavía no tienes empleo formal?</h2>
+
+              <p>
+                También puedes responder con ejemplos de
+                proyectos, cursos y prácticas.
+              </p>
+
+              <button
+                class="boton boton--texto"
+                type="button"
+                data-abrir-guia
+              >
+                Consultar guía de ejemplos
+                <span aria-hidden="true">→</span>
+              </button>
+            </section>
+
+          </div>
+
+          <aside
+            class="tarjeta resumen-configuracion"
+            aria-labelledby="titulo-resumen-configuracion"
+          >
+            <h2 id="titulo-resumen-configuracion">
+              Resumen de tu entrevista
+            </h2>
+
+            <dl class="lista-datos">
+              <div>
+                <dt>Puesto</dt>
+                <dd id="resumen-puesto">Sin seleccionar</dd>
+              </div>
+
+              <div>
+                <dt>Contexto</dt>
+                <dd id="resumen-contexto">Sin seleccionar</dd>
+              </div>
+
+              <div>
+                <dt>Tema</dt>
+                <dd id="resumen-tema">Sin seleccionar</dd>
+              </div>
+
+              <div>
+                <dt>Modalidad</dt>
+                <dd>Texto</dd>
+              </div>
+
+              <div>
+                <dt>Preguntas</dt>
+                <dd id="resumen-cantidad">5</dd>
+              </div>
+
+              <div>
+                <dt>Duración estimada</dt>
+                <dd id="resumen-duracion">Por calcular</dd>
+              </div>
+            </dl>
+
+            <button
+              class="boton boton--primario boton--ancho"
+              type="submit"
+            >
+              Revisar preparación
+              <span aria-hidden="true">→</span>
+            </button>
+
+            <p class="texto-secundario">
+              Podrás guardar una práctica pendiente para
+              continuar posteriormente.
+            </p>
+
+            <p
+              class="mensaje mensaje--error"
+              id="error-configuracion"
+              role="alert"
+              hidden
+            ></p>
+          </aside>
+        </div>
+      </form>
+    </section>
+
+    <!-- ======================================================
+         INFORMACIÓN PERSONAL
+         HU-26, HU-03
+         ====================================================== -->
+    <section
+      class="vista"
+      id="perfil"
+      aria-labelledby="titulo-perfil"
+      data-vista
+      hidden
+    >
+      <div class="encabezado-pagina">
+        <div>
+          <h1 id="titulo-perfil" tabindex="-1">
+            Mi información personal
+          </h1>
+
+          <p>
+            Prepara experiencias que puedas utilizar
+            durante tus entrevistas.
+          </p>
+        </div>
+      </div>
+
+      <div class="perfil-grid">
+        <aside class="tarjeta perfil-navegacion">
+          <h2>Mi perfil</h2>
+
+          <nav aria-label="Secciones de información personal">
+            <ul>
+              <li><a href="#campo-nombre">Información personal</a></li>
+              <li><a href="#campo-estudios">Estudios</a></li>
+              <li><a href="#campo-proyectos">Proyectos</a></li>
+              <li><a href="#campo-experiencias">Experiencias</a></li>
+            </ul>
+          </nav>
+        </aside>
+
+        <form class="tarjeta" id="formulario-perfil">
+          <h2>Información para preparar tus respuestas</h2>
+
+          <p class="texto-secundario">
+            Registra únicamente la información que desees utilizar
+            en tus prácticas. Se guardará en este navegador.
+          </p>
+
+          <div class="campo" id="campo-nombre">
+            <label for="nombre">Nombre o alias</label>
+
+            <input
+              id="nombre"
+              name="nombre"
+              type="text"
+              autocomplete="given-name"
+              maxlength="60"
+            >
+          </div>
+
+          <div class="campo" id="campo-estudios">
+            <label for="estudios">Estudios y cursos relevantes</label>
+
+            <textarea maxlength="4000"
+              id="estudios"
+              name="estudios"
+              rows="4"
+              placeholder="Por ejemplo: carrera, cursos y conocimientos relacionados con el puesto."
+            ></textarea>
+          </div>
+
+          <div class="campo" id="campo-proyectos">
+            <label for="proyectos">Proyectos</label>
+
+            <textarea maxlength="4000"
+              id="proyectos"
+              name="proyectos"
+              rows="5"
+              placeholder="Describe un proyecto, tu responsabilidad y el resultado obtenido."
+            ></textarea>
+          </div>
+
+          <div class="campo" id="campo-experiencias">
+            <label for="experiencias">
+              Experiencias laborales, prácticas u otras actividades
+            </label>
+
+            <textarea maxlength="4000"
+              id="experiencias"
+              name="experiencias"
+              rows="5"
+              placeholder="Puedes incluir voluntariados, actividades académicas o trabajo en equipo."
+            ></textarea>
+          </div>
+
+          <div class="acciones-formulario">
+            <button class="boton boton--primario" type="submit">
+              Guardar información
+            </button>
+
+            <a
+              class="boton boton--secundario"
+              href="#configuracion"
+              data-navegar="configuracion"
+            >
+              Volver a configuración
+            </a>
+          </div>
+
+          <p
+            id="mensaje-perfil"
+            role="status"
+            aria-live="polite"
+          ></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- ======================================================
+         PREPARACIÓN Y AUTOEVALUACIÓN
+         HU-17, HU-19
+         ====================================================== -->
+    <section
+      class="vista"
+      id="preparacion"
+      aria-labelledby="titulo-preparacion"
+      data-vista
+      hidden
+    >
+      <div class="encabezado-pagina">
+        <div>
+          <h1 id="titulo-preparacion" tabindex="-1">
+            Antes de comenzar
+          </h1>
+
+          <p>
+            Revisa tu preparación y organiza tus ideas.
+          </p>
+        </div>
+      </div>
+
+      <p id="guia-contexto" class="tarjeta"></p>
+
+      <form id="formulario-preparacion" class="preparacion-grid">
+
+        <fieldset class="tarjeta checklist">
+          <legend>Checklist de preparación</legend>
+
+          <label class="checklist__elemento">
+            <input type="checkbox" name="checkPuesto">
+            <span>Revisé el puesto y el tema que practicaré.</span>
+          </label>
+
+          <label class="checklist__elemento">
+            <input type="checkbox" name="checkEjemplo">
+            <span>
+              Tengo un proyecto o experiencia que puedo utilizar
+              como ejemplo.
+            </span>
+          </label>
+
+          <label class="checklist__elemento">
+            <input type="checkbox" name="checkEntorno">
+            <span>Dispongo de un espacio para concentrarme.</span>
+          </label>
+
+          <label class="checklist__elemento">
+            <input type="checkbox" name="checkTiempo">
+            <span>Tengo tiempo disponible para practicar.</span>
+          </label>
+
+          <label class="checklist__elemento">
+            <input type="checkbox" name="checkSTAR">
+            <span>
+              Recuerdo los apartados Situación, Tarea, Acción
+              y Resultado.
+            </span>
+          </label>
+
+          <p
+            class="texto-secundario"
+            id="avance-checklist"
+            aria-live="polite"
+          >
+            0 de 5 elementos marcados.
+          </p>
+        </fieldset>
+
+        <div>
+          <fieldset class="tarjeta grupo-opciones">
+            <legend>¿Cómo valoras tu preparación actual?</legend>
+
+            <p>
+              Esta valoración es personal y no modifica
+              la revisión de tus respuestas.
+            </p>
+
+            <div class="opciones opciones--verticales">
+              <label class="opcion">
+                <input
+                  type="radio"
+                  name="autoevaluacionInicial"
+                  value="1"
+                  required
+                >
+                <span>Necesito bastante preparación</span>
+              </label>
+
+              <label class="opcion">
+                <input
+                  type="radio"
+                  name="autoevaluacionInicial"
+                  value="2"
+                >
+                <span>Necesito algo de preparación</span>
+              </label>
+
+              <label class="opcion">
+                <input
+                  type="radio"
+                  name="autoevaluacionInicial"
+                  value="3"
+                >
+                <span>Me siento preparado</span>
+              </label>
+
+              <label class="opcion">
+                <input
+                  type="radio"
+                  name="autoevaluacionInicial"
+                  value="4"
+                >
+                <span>Me siento muy preparado</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="acciones-formulario">
+            <a
+              class="boton boton--secundario"
+              href="#configuracion"
+              data-navegar="configuracion"
+            >
+              Atrás
+            </a>
+
+            <button class="boton boton--primario" type="submit">
+              Iniciar simulación
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- ======================================================
+         SIMULACIÓN
+         ====================================================== -->
+    <section
+      class="vista"
+      id="simulacion"
+      aria-labelledby="titulo-simulacion"
+      data-vista
+      hidden
+    >
+      <div class="encabezado-pagina encabezado-pagina--simulacion">
+        <div>
+          <h1 id="titulo-simulacion" tabindex="-1">
+            Simulación en curso
+          </h1>
+
+          <p id="simulacion-descripcion">
+            Responde utilizando ejemplos concretos.
+          </p>
+        </div>
+
+        <button
+          class="boton boton--secundario"
+          id="guardar-salir"
+          type="button"
+        >
+          Guardar y salir
+        </button>
+      </div>
+
+      <div class="simulacion-grid">
+
+        <aside
+          class="tarjeta panel-configuracion"
+          aria-labelledby="titulo-datos-sesion"
+        >
+          <h2 id="titulo-datos-sesion">
+            Configuración de entrevista
+          </h2>
+
+          <dl class="lista-datos">
+            <div>
+              <dt>Puesto de interés</dt>
+              <dd id="sesion-puesto">—</dd>
+            </div>
+
+            <div>
+              <dt>Perfil del candidato</dt>
+              <dd id="sesion-contexto">—</dd>
+            </div>
+            <div><dt>Preparación inicial</dt><dd id="sesion-autoevaluacion">—</dd></div>
+
+            <div>
+              <dt>Tema</dt>
+              <dd id="sesion-tema">—</dd>
+            </div>
+
+            <div>
+              <dt>Preguntas</dt>
+              <dd id="sesion-cantidad">—</dd>
+            </div>
+
+            <div>
+              <dt>Modalidad</dt>
+              <dd>Texto</dd>
+            </div>
+          </dl>
+
+          <details class="acordeon">
+            <summary>Consultar mis experiencias</summary>
+
+            <div id="experiencias-sesion">
+              <p>
+                Todavía no has registrado experiencias.
+              </p>
+            </div>
+          </details>
+
+          <button
+            class="boton boton--texto"
+            type="button"
+            data-abrir-guia
+          >
+            Guía para responder
+          </button>
+        </aside>
+
+        <div class="simulacion-grid__principal">
+          <section
+            class="tarjeta progreso-sesion"
+            aria-labelledby="titulo-progreso-sesion"
+          >
+            <div class="encabezado-seccion">
+              <h2 id="titulo-progreso-sesion">Progreso de sesión</h2>
+              <p id="contador-preguntas">Pregunta 1 de 5</p>
+            </div>
+
+            <label class="solo-lectores" for="progreso-sesion">
+              Preguntas respondidas
+            </label>
+
+            <progress id="progreso-sesion" value="0" max="5">
+              0 de 5
+            </progress>
+
+            <p
+              class="texto-secundario"
+              id="estado-avance"
+              role="status"
+            >
+              0 respondidas · 5 pendientes
+            </p>
+          </section>
+
+          <article
+            class="tarjeta tarjeta-pregunta"
+            aria-labelledby="pregunta-actual"
+          >
+            <div class="tarjeta-pregunta__cabecera">
+              <span class="etiqueta" id="pregunta-categoria">
+                Categoría
+              </span>
+
+              <span class="texto-secundario" id="pregunta-numero">
+                Pregunta 1
+              </span>
+            </div>
+
+            <h2 id="pregunta-actual" tabindex="-1">
+              Aquí aparecerá la pregunta de la práctica.
+            </h2>
+
+            <p id="pregunta-instruccion">
+              Lee la pregunta y organiza tu respuesta.
+            </p>
+
+            <div
+              class="caso-tecnico"
+              id="caso-tecnico"
+              hidden
+            >
+              <h3>Datos del ejercicio</h3>
+              <pre tabindex="0" role="region" aria-label="Datos del ejercicio"><code id="contenido-caso-tecnico"></code></pre>
+            </div>
+          </article>
+
+          <section
+            class="tarjeta panel-tiempo"
+            aria-labelledby="titulo-tiempo"
+          >
+            <div>
+              <h2 id="titulo-tiempo">Tiempo para pensar</h2>
+
+              <p id="instruccion-tiempo">
+                Organiza tus ideas antes de comenzar.
+              </p>
+            </div>
+
+            <p
+              class="temporizador"
+              id="temporizador"
+              role="timer"
+              aria-label="Tiempo disponible"
+            >
+              00:00
+            </p>
+
+            <p
+              class="aviso-tiempo"
+              id="aviso-tiempo"
+              role="status"
+              aria-live="polite"
+            ></p>
+
+            <button
+              class="boton boton--secundario"
+              id="comenzar-respuesta"
+              type="button"
+            >
+              Comenzar a responder
+            </button>
+          </section>
+
+          <form
+            class="tarjeta formulario-respuesta"
+            id="formulario-respuesta"
+          >
+            <div class="campo">
+              <label for="respuesta-actual">Tu respuesta</label>
+
+              <textarea maxlength="4000"
+                id="respuesta-actual"
+                name="respuesta"
+                rows="9"
+                required
+                disabled
+                aria-describedby="ayuda-respuesta error-respuesta"
+                placeholder="Escribe aquí tu respuesta..."
+              ></textarea>
+
+              <p class="campo__ayuda" id="ayuda-respuesta">
+                Explica el contexto, tu responsabilidad,
+                lo que hiciste y el resultado.
+                En preguntas técnicas, describe tu razonamiento.
+              </p>
+
+              <p
+                class="campo__error"
+                id="error-respuesta"
+                hidden
+              ></p>
+            </div>
+
+            <p class="texto-secundario" id="contador-palabras">
+              0 palabras
+            </p>
+
+            <details class="acordeon">
+              <summary>Organizar mi respuesta con STAR</summary>
+
+              <p class="texto-secundario">
+                Esta estructura resulta útil para preguntas
+                sobre experiencias y situaciones.
+              </p>
+
+              <div class="star-campos">
+                <div class="campo">
+                  <label for="star-situacion">Situación</label>
+
+                  <textarea maxlength="4000"
+                    id="star-situacion"
+                    name="situacion"
+                    rows="3"
+                    disabled
+                    placeholder="¿En qué contexto ocurrió?"
+                  ></textarea>
+                </div>
+
+                <div class="campo">
+                  <label for="star-tarea">Tarea</label>
+
+                  <textarea maxlength="4000"
+                    id="star-tarea"
+                    name="tarea"
+                    rows="3"
+                    disabled
+                    placeholder="¿Qué debías lograr y cuál era tu responsabilidad?"
+                  ></textarea>
+                </div>
+
+                <div class="campo">
+                  <label for="star-accion">Acción</label>
+
+                  <textarea maxlength="4000"
+                    id="star-accion"
+                    name="accion"
+                    rows="3"
+                    disabled
+                    placeholder="¿Qué hiciste tú?"
+                  ></textarea>
+                </div>
+
+                <div class="campo">
+                  <label for="star-resultado">Resultado</label>
+
+                  <textarea maxlength="4000"
+                    id="star-resultado"
+                    name="resultado"
+                    rows="3"
+                    disabled
+                    placeholder="¿Qué se consiguió y qué aprendiste?"
+                  ></textarea>
+                </div>
+              </div>
+
+              <button
+                class="boton boton--secundario"
+                id="usar-estructura-star"
+                type="button"
+                disabled
+              >
+                Utilizar estos apartados en mi respuesta
+              </button>
+            </details>
+
+            <div class="acciones-formulario">
+              <button
+                class="boton boton--secundario"
+                id="guardar-respuesta"
+                type="submit"
+                disabled
+              >
+                Guardar y revisar respuesta
+              </button>
+
+              <button
+                class="boton boton--primario"
+                id="siguiente-pregunta"
+                type="button"
+                disabled
+              >
+                Siguiente pregunta
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </form>
+
+          <section
+            class="tarjeta"
+            aria-labelledby="titulo-respuestas-sesion"
+          >
+            <h2 id="titulo-respuestas-sesion">
+              Respuestas de esta sesión
+            </h2>
+
+            <p class="texto-secundario">
+              Puedes seleccionar una pregunta respondida
+              para intentarla nuevamente.
+            </p>
+
+            <ol
+              class="lista-respuestas-sesion"
+              id="lista-respuestas-sesion"
+            ></ol>
+          </section>
+
+          <div class="acciones-sesion">
+            <button
+              class="boton boton--secundario"
+              id="guardar-pendiente"
+              type="button"
+            >
+              Guardar práctica pendiente
+            </button>
+
+            <button
+              class="boton boton--primario"
+              id="finalizar-practica"
+              type="button"
+              disabled
+            >
+              Finalizar práctica
+            </button>
+          </div>
+        </div>
+
+        <aside
+          class="tarjeta panel-analisis"
+          aria-labelledby="titulo-analisis"
+        >
+          <div class="encabezado-seccion">
+            <h2 id="titulo-analisis">Análisis de desempeño</h2>
+
+            <span
+              class="etiqueta"
+              id="estado-analisis"
+            >
+              Sin revisar
+            </span>
+          </div>
+
+          <p class="texto-secundario">
+            Última respuesta revisada
+          </p>
+
+          <div id="analisis-respuesta">
+            <p class="estado-vacio">
+              Guarda una respuesta para consultar
+              los comentarios y criterios de revisión.
+            </p>
+          </div>
+
+          <details class="acordeon">
+            <summary>¿Cómo se generan las recomendaciones?</summary>
+
+            <div id="criterios-analisis">
+              <p>
+                Se utilizarán reglas de revisión previamente
+                definidas para el tipo de pregunta.
+              </p>
+
+              <p>
+                Cada recomendación indicará el criterio aplicado
+                y la información que conviene desarrollar.
+              </p>
+            </div>
+          </details>
+
+          <p class="nota-orientativa">
+            La retroalimentación es orientativa.
+            No representa una evaluación de selección laboral.
+          </p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ======================================================
+         RESULTADOS
+         HU-05, HU-06, HU-31, HU-34, HU-19, HU-47
+         ====================================================== -->
+    <section
+      class="vista"
+      id="resultados"
+      aria-labelledby="titulo-resultados"
+      data-vista
+      hidden
+    >
+      <div class="encabezado-pagina">
+        <div>
+          <h1 id="titulo-resultados" tabindex="-1">
+            Resultados de tu práctica
+          </h1>
+
+          <p>Revisa tus respuestas y prepara tu siguiente intento.</p>
+        </div>
+      </div>
+
+      <div class="tarjeta estado-vacio" id="resultados-vacios">
+        <h2>Aún no hay resultados disponibles</h2>
+
+        <p>
+          Completa una práctica o abre una sesión finalizada
+          desde tu historial.
+        </p>
+
+        <a
+          class="boton boton--primario"
+          href="#configuracion"
+          data-navegar="configuracion"
+        >
+          Crear una práctica
+        </a>
+      </div>
+
+      <div id="contenido-resultados" hidden>
+        <dl class="tarjeta resumen-resultados">
+          <div>
+            <dt>Puesto</dt>
+            <dd id="resultado-puesto">—</dd>
+          </div>
+
+          <div>
+            <dt>Tema</dt>
+            <dd id="resultado-tema">—</dd>
+          </div>
+
+          <div>
+            <dt>Duración</dt>
+            <dd id="resultado-duracion">—</dd>
+          </div>
+
+          <div>
+            <dt>Preguntas respondidas</dt>
+            <dd id="resultado-preguntas">—</dd>
+          </div>
+        </dl>
+
+        <div class="resultados-grid">
+          <section
+            class="tarjeta puntuacion"
+            aria-labelledby="titulo-puntuacion"
+          >
+            <h2 id="titulo-puntuacion">Índice de estructura</h2>
+
+            <div class="puntuacion__circulo">
+              <span class="puntuacion__valor" id="resultado-puntuacion">
+                —
+              </span>
+              <span>de 100</span>
+            </div>
+
+            <p id="resultado-descripcion"></p>
+
+            <p class="mensaje mensaje--advertencia">
+              El índice resume señales de estructura y no representa
+              el resultado que obtendrías en una entrevista real.
+            </p>
+          </section>
+
+          <section
+            class="tarjeta"
+            aria-labelledby="titulo-indicadores"
+          >
+            <h2 id="titulo-indicadores">Indicadores de la práctica</h2>
+
+            <div id="resultado-indicadores"></div>
+
+            <p class="texto-secundario">
+              Solo se mostrarán indicadores que puedan revisarse
+              con las respuestas y los criterios disponibles.
+            </p>
+          </section>
+        </div>
+
+        <div class="retroalimentacion-grid">
+          <section
+            class="tarjeta tarjeta--positiva"
+            aria-labelledby="titulo-fortalezas"
+          >
+            <h2 id="titulo-fortalezas">Lo que hiciste bien</h2>
+            <ul id="resultado-fortalezas"></ul>
+          </section>
+
+          <section
+            class="tarjeta tarjeta--advertencia"
+            aria-labelledby="titulo-mejoras"
+          >
+            <h2 id="titulo-mejoras">Lo que puedes mejorar</h2>
+            <ul id="resultado-mejoras"></ul>
+          </section>
+
+          <section
+            class="tarjeta tarjeta--informativa"
+            aria-labelledby="titulo-recomendaciones"
+          >
+            <h2 id="titulo-recomendaciones">
+              Qué practicar a continuación
+            </h2>
+
+            <ul id="resultado-recomendaciones"></ul>
+          </section>
+        </div>
+
+        <section
+          class="tarjeta"
+          aria-labelledby="titulo-detalle-respuestas"
+        >
+          <h2 id="titulo-detalle-respuestas">
+            Respuestas y retroalimentación
+          </h2>
+
+          <div id="resultado-respuestas"></div>
+        </section>
+
+        <section
+          class="tarjeta"
+          aria-labelledby="titulo-criterios-resultados"
+        >
+          <h2 id="titulo-criterios-resultados">
+            Criterios y alcance de la revisión
+          </h2>
+
+          <div id="resultado-criterios"></div>
+
+          <p>
+            Las recomendaciones buscan ayudarte a practicar.
+            Una revisión mediante reglas no garantiza la exactitud
+            de una respuesta ni predice una decisión de contratación.
+          </p>
+        </section>
+
+        <form class="tarjeta" id="formulario-autoevaluacion-final">
+          <fieldset class="grupo-opciones">
+            <legend>
+              ¿Cómo valoras tu preparación después de practicar?
+            </legend>
+
+            <div class="opciones">
+              <label class="opcion">
+                <input
+                  type="radio"
+                  name="autoevaluacionFinal"
+                  value="1"
+                  required
+                >
+                <span>Necesito bastante preparación</span>
+              </label>
+
+              <label class="opcion">
+                <input
+                  type="radio"
+                  name="autoevaluacionFinal"
+                  value="2"
+                >
+                <span>Necesito algo de preparación</span>
+              </label>
+
+              <label class="opcion">
+                <input
+                  type="radio"
+                  name="autoevaluacionFinal"
+                  value="3"
+                >
+                <span>Me siento preparado</span>
+              </label>
+
+              <label class="opcion">
+                <input
+                  type="radio"
+                  name="autoevaluacionFinal"
+                  value="4"
+                >
+                <span>Me siento muy preparado</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <button
+            class="boton boton--secundario"
+            type="submit"
+          >
+            Guardar autoevaluación
+          </button>
+
+          <p id="resultado-autoevaluacion" role="status"></p>
+        </form>
+
+        <div class="acciones-resultados">
+          <button
+            class="boton boton--secundario"
+            id="repetir-practica-resultados"
+            type="button"
+          >
+            Repetir práctica
+          </button>
+
+          <button
+            class="boton boton--secundario"
+            id="comparar-desde-resultados"
+            type="button"
+          >
+            Comparar con otro intento
+          </button>
+
+          <a
+            class="boton boton--primario"
+            href="#inicio"
+            data-navegar="inicio"
+          >
+            Volver al dashboard
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================
+         HISTORIAL
+         HU-38, HU-37, HU-47
+         ====================================================== -->
+    <section
+      class="vista"
+      id="historial"
+      aria-labelledby="titulo-historial"
+      data-vista
+      hidden
+    >
+      <div class="encabezado-pagina">
+        <div>
+          <h1 id="titulo-historial" tabindex="-1">Mis prácticas</h1>
+
+          <p id="cantidad-practicas-guardadas">
+            0 prácticas guardadas
+          </p>
+        </div>
+
+        <a
+          class="boton boton--primario"
+          href="#configuracion"
+          data-navegar="configuracion"
+        >
+          <span aria-hidden="true">+</span>
+          Nueva simulación
+        </a>
+      </div>
+
+      <form class="tarjeta filtros" id="formulario-filtros-historial">
+        <div class="campo">
+          <label for="historial-estado">Estado</label>
+
+          <select id="historial-estado" name="estado">
+            <option value="todas">Todas las prácticas</option>
+            <option value="finalizada">Finalizadas</option>
+            <option value="pendiente">Pendientes</option>
+          </select>
+        </div>
+
+        <div class="campo">
+          <label for="historial-periodo">Periodo</label>
+
+          <select id="historial-periodo" name="periodo">
+            <option value="todo">Todo el historial</option>
+            <option value="semana">Últimos 7 días</option>
+            <option value="mes">Últimos 30 días</option>
+          </select>
+        </div>
+
+        <button class="boton boton--secundario" type="submit">
+          Aplicar filtros
+        </button>
+      </form>
+
+      <!--
+        JavaScript insertará tarjetas con:
+        puesto, fecha, tema, estado, valoración y acciones.
+        CSS permitirá distribuirlas como filas en escritorio.
+      -->
+      <div class="historial-lista" id="lista-historial">
+        <div class="tarjeta estado-vacio">
+          <h2>Tu historial está vacío</h2>
+
+          <p>
+            Las prácticas que guardes aparecerán en esta sección.
+          </p>
+        </div>
+      </div>
+
+      <div class="acciones-formulario">
+        <a
+          class="boton boton--secundario"
+          href="#comparacion"
+          data-navegar="comparacion"
+        >
+          Comparar prácticas
+        </a>
+      </div>
+    </section>
+
+    <!-- ======================================================
+         COMPARACIÓN
+         HU-40
+         ====================================================== -->
+    <section
+      class="vista"
+      id="comparacion"
+      aria-labelledby="titulo-comparacion"
+      data-vista
+      hidden
+    >
+      <div class="encabezado-pagina">
+        <div>
+          <h1 id="titulo-comparacion" tabindex="-1">
+            Comparación de intentos
+          </h1>
+
+          <p>
+            Observa tus cambios entre dos prácticas del mismo puesto.
+          </p>
+        </div>
+      </div>
+
+      <form class="tarjeta" id="formulario-comparacion">
+        <div class="comparacion-selectores">
+          <div class="campo">
+            <label for="intento-a">Práctica A</label>
+
+            <select id="intento-a" name="intentoA" required>
+              <option value="">Selecciona una práctica</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="intento-b">Práctica B</label>
+
+            <select id="intento-b" name="intentoB" required>
+              <option value="">Selecciona otra práctica</option>
+            </select>
+          </div>
+        </div>
+
+        <p class="texto-secundario">
+          Selecciona dos prácticas finalizadas y diferentes
+          del mismo puesto.
+        </p>
+
+        <button class="boton boton--primario" type="submit">
+          Comparar intentos
+        </button>
+
+        <p
+          class="campo__error"
+          id="error-comparacion"
+          role="alert"
+          hidden
+        ></p>
+      </form>
+
+      <div class="tarjeta estado-vacio" id="comparacion-vacia">
+        <p>
+          Necesitas al menos dos prácticas finalizadas
+          del mismo puesto para realizar una comparación.
+        </p>
+      </div>
+
+      <div id="contenido-comparacion" hidden>
+        <section
+          class="tarjeta comparacion-resumen"
+          aria-labelledby="titulo-resumen-comparacion"
+        >
+          <h2 id="titulo-resumen-comparacion">
+            Resumen de los intentos
+          </h2>
+
+          <div class="comparacion-resumen__intentos">
+            <article>
+              <h3>Intento anterior</h3>
+              <p id="comparacion-fecha-anterior"></p>
+              <p
+                class="comparacion-resumen__valor"
+                id="comparacion-puntuacion-anterior"
+              ></p>
+            </article>
+
+            <div>
+              <p id="comparacion-diferencia"></p>
+              <p id="comparacion-interpretacion"></p>
+            </div>
+
+            <article>
+              <h3>Intento reciente</h3>
+              <p id="comparacion-fecha-reciente"></p>
+              <p
+                class="comparacion-resumen__valor"
+                id="comparacion-puntuacion-reciente"
+              ></p>
+            </article>
+          </div>
+        </section>
+
+        <section
+          class="tarjeta"
+          aria-labelledby="titulo-comparacion-indicadores"
+        >
+          <h2 id="titulo-comparacion-indicadores">
+            Comparación por indicador
+          </h2>
+
+          <div id="comparacion-indicadores"></div>
+        </section>
+
+        <div class="retroalimentacion-grid">
+          <section class="tarjeta tarjeta--positiva">
+            <h2>Cambios identificados</h2>
+            <ul id="comparacion-cambios"></ul>
+          </section>
+
+          <section class="tarjeta tarjeta--advertencia">
+            <h2>Aún puedes trabajar en…</h2>
+            <ul id="comparacion-pendientes"></ul>
+          </section>
+        </div>
+
+        <section
+          class="tarjeta"
+          aria-labelledby="titulo-comparacion-respuestas"
+        >
+          <h2 id="titulo-comparacion-respuestas">
+            Respuestas de ambas prácticas
+          </h2>
+
+          <div id="comparacion-respuestas"></div>
+        </section>
+
+        <p class="mensaje mensaje--informacion">
+          La comparación se centra en tu práctica y aprendizaje.
+          Los cambios de puntuación deben interpretarse considerando
+          las preguntas y los criterios utilizados en cada sesión.
+        </p>
+
+        <button
+          class="boton boton--primario"
+          id="repetir-practica-comparacion"
+          type="button"
+        >
+          Repetir la práctica reciente
+        </button>
+      </div>
+    </section>
+
+    <!-- ======================================================
+         BANCO DE PREGUNTAS
+         HU-02, HU-11, HU-12, HU-28
+         ====================================================== -->
+    <section
+      class="vista"
+      id="banco"
+      aria-labelledby="titulo-banco"
+      data-vista
+      hidden
+    >
+      <div class="encabezado-pagina">
+        <div>
+          <h1 id="titulo-banco" tabindex="-1">
+            Banco de preguntas
+          </h1>
+
+          <p id="cantidad-preguntas-banco">
+            Consulta las preguntas disponibles para practicar.
+          </p>
+        </div>
+      </div>
+
+      <div class="banco-grid">
+        <aside class="tarjeta">
+          <form id="formulario-filtros-banco">
+            <h2>Filtrar preguntas</h2>
+
+            <div class="campo">
+              <label for="buscar-pregunta">Buscar</label>
+
+              <input
+                id="buscar-pregunta"
+                name="busqueda"
+                type="search"
+                placeholder="Buscar preguntas..."
+              >
+            </div>
+
+            <div class="campo">
+              <label for="banco-puesto">Puesto</label>
+
+              <select id="banco-puesto" name="puesto">
+                <option value="">Todos los puestos</option>
+                <option value="desarrollador-junior">
+                  Desarrollador Junior
+                </option>
+                <option value="practicante-sistemas">
+                  Practicante de Sistemas
+                </option>
+                <option value="analista-datos-junior">
+                  Analista de Datos Junior
+                </option>
+                <option value="soporte-ti">
+                  Soporte TI
+                </option>
+                <option value="asistente-administrativo">
+                  Asistente Administrativo
+                </option>
+              </select>
+            </div>
+
+            <div class="campo">
+              <label for="banco-tipo">Tipo de pregunta</label>
+
+              <select id="banco-tipo" name="tipo">
+                <option value="">Todos los tipos</option>
+                <option value="personal">Personal y experiencias</option>
+                <option value="situacional">Situacional</option>
+                <option value="conocimiento">Conocimiento profesional</option>
+                <option value="caso-tecnico">Caso técnico</option>
+              </select>
+            </div>
+
+            <button
+              class="boton boton--primario boton--ancho"
+              type="submit"
+            >
+              Buscar preguntas
+            </button>
+
+            <button
+              class="boton boton--texto"
+              type="reset"
+            >
+              Limpiar filtros
+            </button>
+          </form>
+        </aside>
+
+        <div>
+          <p
+            class="texto-secundario"
+            id="estado-busqueda-banco" tabindex="-1"
+            role="status"
+            aria-live="polite"
+          ></p>
+
+          <div class="lista-preguntas" id="lista-banco">
+            <p class="estado-vacio">
+              Las preguntas se cargarán desde el banco preparado.
+            </p>
+          </div>
+          <nav id="paginacion-banco" class="acciones-formulario"
+               aria-label="Páginas del banco de preguntas" hidden>
+            <button id="banco-anterior" class="boton boton--secundario" type="button">Anterior</button>
+            <button id="banco-siguiente" class="boton boton--secundario" type="button">Siguiente</button>
+          </nav>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================
+         AYUDA Y ACCESIBILIDAD
+         HU-14, HU-21, HU-24
+         ====================================================== -->
+    <section
+      class="vista"
+      id="ayuda"
+      aria-labelledby="titulo-ayuda"
+      data-vista
+      hidden
+    >
+      <div class="encabezado-pagina">
+        <div>
+          <h1 id="titulo-ayuda" tabindex="-1">
+            Ayuda y accesibilidad
+          </h1>
+
+          <p>
+            Resuelve tus dudas y ajusta la lectura de la interfaz.
+          </p>
+        </div>
+      </div>
+
+      <section
+        class="tarjeta"
+        aria-labelledby="titulo-tamano-texto"
+      >
+        <h2 id="titulo-tamano-texto">Tamaño del texto</h2>
+
+        <p>
+          Ajusta el tamaño del texto para leer cómodamente.
+        </p>
+
+        <div
+          class="controles-texto"
+          role="group"
+          aria-label="Ajustar tamaño del texto"
+        >
+          <button
+            class="boton boton--secundario"
+            id="reducir-texto"
+            type="button"
+          >
+            <span aria-hidden="true">A−</span>
+            <span class="solo-lectores">Reducir tamaño del texto</span>
+          </button>
+
+          <button
+            class="boton boton--secundario"
+            id="restablecer-texto"
+            type="button"
+          >
+            Restablecer
+          </button>
+
+          <button
+            class="boton boton--secundario"
+            id="aumentar-texto"
+            type="button"
+          >
+            <span aria-hidden="true">A+</span>
+            <span class="solo-lectores">Aumentar tamaño del texto</span>
+          </button>
+        </div>
+
+        <p
+          id="estado-tamano-texto"
+          role="status"
+          aria-live="polite"
+        >
+          Tamaño del texto: 100 %
+        </p>
+      </section>
+
+      <section
+        class="tarjeta"
+        aria-labelledby="titulo-preguntas-frecuentes"
+      >
+        <h2 id="titulo-preguntas-frecuentes">
+          Preguntas frecuentes
+        </h2>
+
+        <details class="acordeon">
+          <summary>¿Cómo comienzo una práctica?</summary>
+
+          <p>
+            Selecciona “Nueva simulación”, elige el puesto,
+            el contexto, el tema y la cantidad de preguntas.
+            Después revisa tu preparación e inicia la sesión.
+          </p>
+        </details>
+
+        <details class="acordeon">
+          <summary>
+            ¿Puedo practicar si no tengo experiencia laboral?
+          </summary>
+
+          <p>
+            Sí. Puedes utilizar ejemplos de proyectos académicos,
+            cursos, prácticas, voluntariados o actividades en equipo.
+          </p>
+
+          <button
+            class="boton boton--texto"
+            type="button"
+            data-abrir-guia
+          >
+            Consultar guía de ejemplos
+          </button>
+        </details>
+
+        <details class="acordeon">
+          <summary>¿Qué es el método STAR?</summary>
+
+          <p>
+            Es una estructura para explicar una experiencia:
+            Situación, Tarea, Acción y Resultado.
+            Te ayuda a describir el contexto, tu responsabilidad,
+            lo que hiciste y lo que se consiguió.
+          </p>
+        </details>
+
+        <details class="acordeon">
+          <summary>¿Cómo guardo una práctica pendiente?</summary>
+
+          <p>
+            Durante la simulación utiliza “Guardar práctica pendiente”
+            o “Guardar y salir”. Podrás continuarla desde
+            “Mis prácticas”.
+          </p>
+        </details>
+
+        <details class="acordeon">
+          <summary>¿Dónde se guardan mis datos?</summary>
+
+          <p>
+            Esta versión utilizará el almacenamiento local
+            del navegador del dispositivo. Los registros no se
+            sincronizan automáticamente con otros dispositivos.
+            Si borras los datos del sitio, puedes perderlos.
+          </p>
+        </details>
+
+        <details class="acordeon">
+          <summary>¿Cómo se revisan mis respuestas?</summary>
+
+          <p>
+            Se utilizarán criterios y reglas previamente definidos.
+            Los comentarios mostrarán su motivo y las sugerencias
+            que puedes considerar para tu siguiente intento.
+          </p>
+        </details>
+
+        <details class="acordeon">
+          <summary>
+            ¿La puntuación predice el resultado de una entrevista?
+          </summary>
+
+          <p>
+            No. Es una referencia para la práctica.
+            No representa la decisión de un empleador.
+          </p>
+        </details>
+
+        <details class="acordeon">
+          <summary>¿Cómo comparo mis prácticas?</summary>
+
+          <p>
+            Completa al menos dos prácticas del mismo puesto.
+            En “Comparar intentos”, selecciona las dos sesiones
+            para consultar sus respuestas y valoraciones.
+          </p>
+        </details>
+
+        <details class="acordeon">
+          <summary>¿Puedo utilizar la página con el teclado?</summary>
+
+          <p>
+            Utiliza Tab y Mayús + Tab para recorrer los controles.
+            Activa los enlaces con Enter y los botones con Enter
+            o la barra espaciadora. Los grupos de opciones
+            también permiten utilizar las flechas.
+          </p>
+        </details>
+      </section>
+    </section>
+
+  </main>
+
+  <!-- GUÍA PARA RESPONDER SIN EMPLEO FORMAL. -->
+  <dialog
+    class="dialogo"
+    id="dialogo-guia"
+    aria-labelledby="titulo-guia"
+  >
+    <div class="dialogo__cabecera">
+      <h2 id="titulo-guia">
+        Responde con tus proyectos, cursos y prácticas
+      </h2>
+
+      <form method="dialog">
+        <button
+          class="boton boton--icono"
+          type="submit"
+          aria-label="Cerrar guía"
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+      </form>
+    </div>
+
+    <p>
+      No necesitas haber tenido un empleo formal para explicar
+      una experiencia relevante. Elige un ejemplo real y
+      describe tu aporte.
+    </p>
+
+    <div class="guia-ejemplos">
+      <article class="tarjeta">
+        <h3>Proyecto académico</h3>
+        <p>
+          Explica qué problema resolvía el proyecto,
+          qué parte desarrollaste y qué resultado obtuvo el equipo.
+        </p>
+      </article>
+
+      <article class="tarjeta">
+        <h3>Curso o ejercicio</h3>
+        <p>
+          Describe una dificultad, el conocimiento que aplicaste
+          y cómo comprobaste tu solución.
+        </p>
+      </article>
+
+      <article class="tarjeta">
+        <h3>Práctica o voluntariado</h3>
+        <p>
+          Cuenta qué responsabilidad asumiste,
+          qué acciones realizaste y a quién ayudaron.
+        </p>
+      </article>
+    </div>
+
+    <h3>Organiza tu ejemplo</h3>
+
+    <ol class="guia-star">
+      <li><strong>Situación:</strong> ¿Qué estaba pasando?</li>
+      <li><strong>Tarea:</strong> ¿Qué debías conseguir?</li>
+      <li><strong>Acción:</strong> ¿Qué hiciste tú?</li>
+      <li><strong>Resultado:</strong> ¿Qué ocurrió y qué aprendiste?</li>
+    </ol>
+
+    <p class="mensaje mensaje--informacion">
+      Describe tu contribución con honestidad.
+      Si no tienes una cifra para el resultado, explica
+      un cambio observable o un aprendizaje concreto.
+    </p>
+
+    <form method="dialog" class="dialogo__acciones">
+      <button class="boton boton--primario" type="submit">
+        Entendido
+      </button>
+    </form>
+  </dialog>
+
+  <!-- CONFIRMACIÓN DE FINALIZACIÓN. -->
+  <dialog
+    class="dialogo"
+    id="dialogo-finalizar"
+    aria-labelledby="titulo-confirmar-finalizacion"
+    aria-describedby="descripcion-confirmar-finalizacion"
+  >
+    <h2 id="titulo-confirmar-finalizacion">
+      ¿Finalizar esta práctica?
+    </h2>
+
+    <p id="descripcion-confirmar-finalizacion">
+      Revisa que hayas guardado tus respuestas.
+      Al finalizar podrás consultar los resultados.
+    </p>
+
+    <p id="resumen-finalizacion"></p>
+
+    <form method="dialog" class="dialogo__acciones">
+      <button
+        class="boton boton--secundario"
+        type="submit"
+        value="cancelar"
+      >
+        Seguir practicando
+      </button>
+
+      <button
+        class="boton boton--primario"
+        type="submit"
+        value="confirmar"
+      >
+        Finalizar y ver resultados
+      </button>
+    </form>
+  </dialog>
+
+  <footer class="pie-pagina">
+    <div class="contenedor pie-pagina__contenido">
+      <p>
+        <strong>InterviewUP</strong>
+        · Prepárate para tu próxima entrevista.
+      </p>
+
+      <p>
+        Herramienta de práctica con recomendaciones orientativas.
+      </p>
+
+      <a href="#ayuda" data-navegar="ayuda">
+        Ayuda y accesibilidad
+      </a>
+    </div>
+  </footer>
+
+  <noscript>
+    <p class="mensaje mensaje--advertencia">
+      Activa JavaScript para configurar y realizar las prácticas,
+      guardar respuestas y consultar tus resultados.
+    </p>
+  </noscript>
+
+</body>
+</html>
