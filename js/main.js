@@ -753,6 +753,81 @@
     });
 
     vistaActual = destino;
+    const vistasProgreso = [
+  "resultados",
+  "historial",
+  "comparacion",
+  "banco"
+];
+
+if (vistasProgreso.includes(destino)) {
+  const seccion = document.getElementById(destino);
+  let navegacionProgreso = seccion.querySelector(".pestanas-progreso");
+
+  if (!navegacionProgreso) {
+    navegacionProgreso = document.createElement("nav");
+
+    navegacionProgreso.className = "pestanas-progreso";
+    navegacionProgreso.setAttribute(
+      "aria-label",
+      "Secciones de Mi progreso"
+    );
+
+    navegacionProgreso.innerHTML = `
+      <a href="#resultados" data-navegar="resultados">
+        Mis resultados
+      </a>
+
+      <a href="#historial" data-navegar="historial">
+        Mis prácticas
+      </a>
+
+      <a href="#comparacion" data-navegar="comparacion">
+        Comparar intentos
+      </a>
+
+      <a href="#banco" data-navegar="banco">
+        Banco de preguntas
+      </a>
+    `;
+
+    seccion.prepend(navegacionProgreso);
+  }
+
+  navegacionProgreso.querySelectorAll("a").forEach(enlace => {
+    if (enlace.dataset.navegar === destino) {
+      enlace.setAttribute("aria-current", "page");
+    } else {
+      enlace.removeAttribute("aria-current");
+    }
+  });
+}
+    const grupoMovil = {
+  inicio: "inicio",
+  configuracion: "configuracion",
+  preparacion: "configuracion",
+  simulacion: "configuracion",
+  historial: "progreso",
+  resultados: "progreso",
+  comparacion: "progreso",
+  banco: "progreso",
+  perfil: "perfil",
+  ayuda: "ayuda"
+};
+
+$$(".barra-inferior [data-movil]").forEach(elemento => {
+  const activo = elemento.dataset.movil === grupoMovil[destino];
+
+  elemento.classList.toggle("activo", activo);
+
+  if (activo) {
+    elemento.setAttribute("aria-current", "true");
+  } else {
+    elemento.removeAttribute("aria-current");
+  }
+});
+
+$("#menu-progreso-movil").open = false;
 
     $$(".navegacion__enlace").forEach(enlace => {
       if (enlace.dataset.navegar === destino) {
