@@ -2850,3 +2850,196 @@ pre {
     margin-top: calc(1.125rem * 1.3 + 1rem);
   }
 }
+/* Navegación inferior para celular. */
+
+.barra-inferior {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  body {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .cabecera .boton-menu,
+  .cabecera .navegacion {
+    display: none;
+  }
+
+  .barra-inferior {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 60;
+
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+
+    padding: 0.4rem 0.25rem;
+    padding-bottom: calc(
+      0.4rem + env(safe-area-inset-bottom, 0px)
+    );
+
+    border-top: 1px solid var(--borde);
+    background: var(--superficie);
+    box-shadow: 0 -3px 15px rgb(23 32 51 / 6%);
+  }
+
+  .barra-inferior > a,
+  .barra-inferior summary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 0.25rem;
+    min-height: 3.5rem;
+    padding: 0.35rem 0.1rem;
+
+    border-radius: 0.5rem;
+    color: var(--texto-secundario);
+
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .barra-inferior summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .barra-inferior [data-movil] > span:first-child {
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+
+  .barra-inferior [data-movil].activo,
+  .barra-inferior summary:hover,
+  .barra-inferior > a:hover {
+    background: var(--azul-suave);
+    color: var(--azul-oscuro);
+  }
+
+  .barra-inferior__opciones {
+    position: absolute;
+    right: 0.75rem;
+    bottom: calc(100% + 0.5rem);
+
+    display: grid;
+    width: min(18rem, calc(100vw - 1.5rem));
+    max-height: 55dvh;
+    overflow-y: auto;
+
+    padding: 0.5rem;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+
+    background: var(--superficie);
+    box-shadow: var(--sombra-elevada);
+  }
+
+  .barra-inferior__opciones a {
+    display: flex;
+    align-items: center;
+
+    min-height: 2.75rem;
+    padding: 0.75rem;
+    border-radius: var(--radio-pequeno);
+
+    color: var(--texto);
+    text-decoration: none;
+    font-size: 0.875rem;
+  }
+
+  .barra-inferior__opciones a:hover {
+    background: var(--azul-suave);
+    color: var(--azul-oscuro);
+  }
+
+  /* Deja espacio al enfocar o desplazar controles. */
+  html {
+    scroll-padding-bottom: calc(
+      6rem + env(safe-area-inset-bottom, 0px)
+    );
+  }
+}
+/* Opciones superiores de Mi progreso en móvil. */
+
+.pestanas-progreso {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .pestanas-progreso {
+    display: flex;
+    align-items: stretch;
+    gap: 0.4rem;
+
+    max-width: 100%;
+    margin-bottom: 1.25rem;
+    padding: 0.4rem;
+
+    overflow-x: auto;
+
+    border: 1px solid var(--borde);
+    border-radius: 0.75rem;
+    background: #eaf0f8;
+
+    scroll-padding-inline: 0.4rem;
+  }
+
+  .pestanas-progreso a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 0 auto;
+
+    min-height: 2.75rem;
+    padding: 0.65rem 0.8rem;
+
+    border-radius: 0.5rem;
+
+    color: var(--texto-secundario);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .pestanas-progreso a:hover {
+    background: var(--azul-suave);
+    color: var(--azul-oscuro);
+  }
+
+  .pestanas-progreso a[aria-current="page"] {
+    background: var(--superficie);
+    color: var(--azul-oscuro);
+
+    box-shadow: 0 2px 5px rgb(23 32 51 / 8%);
+  }
+}
+@media (max-width: 760px) {
+  .pestanas-progreso {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
+
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  .pestanas-progreso a {
+    min-width: 0;
+    min-height: 3rem;
+    padding: 0.65rem 0.5rem;
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+}
