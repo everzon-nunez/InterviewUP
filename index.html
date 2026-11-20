@@ -6,12 +6,37 @@
   <meta name="description" content="InterviewUP: practica entrevistas laborales, organiza tus respuestas y revisa tu progreso.">
   <meta name="theme-color" content="#2563eb">
   <title>InterviewUP | Practica tu próxima entrevista</title>
+  <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
+ <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="./css/styles.css">
-  <script src="./js/main.js" defer></script>
+  <link rel="stylesheet" href="../css/styles.css">
+  <script src="../js/main.js" defer></script>
 </head>
 
 <body>
+    <dialog id="acceso" aria-labelledby="acceso-titulo">
+      <p class="acceso-marca">Interview<span>UP</span></p>
+      <h1 id="acceso-titulo">Iniciar sesión</h1>
+      <p>Accede a tu perfil y a tus prácticas guardadas en este navegador.</p>
+      <form id="acceso-formulario">
+        <label id="acceso-nombre-grupo" hidden>Nombre
+          <input id="acceso-nombre" autocomplete="name" maxlength="80" disabled />
+        </label>
+        <label>Correo electrónico
+          <input id="acceso-correo" type="email" maxlength="254" autocomplete="username" required autofocus />
+        </label>
+        <label>Contraseña
+          <input id="acceso-clave" type="password" autocomplete="current-password" maxlength="128" required />
+        </label>
+        <label id="acceso-importar-grupo" hidden>
+          <input id="acceso-importar" type="checkbox" disabled /> Importar mi perfil y mis prácticas anteriores de este navegador
+        </label>
+        <p id="acceso-mensaje" role="status"></p>
+        <button class="acceso-enviar" type="submit">Iniciar sesión</button>
+        <button id="acceso-alternar" type="button">Crear una cuenta</button>
+      </form>
+    </dialog>
   <a class="saltar-contenido" href="#contenido-principal">
     Saltar al contenido principal
   </a>
@@ -54,6 +79,15 @@
         <a class="boton boton--primario boton--compacto" href="#configuracion" data-navegar="configuracion">
           <span aria-hidden="true">+</span> Nueva simulación
         </a>
+          <button
+            id="boton-tema"
+            class="boton-tema"
+            type="button"
+            aria-label="Modo oscuro"
+            aria-pressed="false"
+          >
+            <span aria-hidden="true">☾</span>
+          </button>
         <a class="avatar" href="#perfil" data-navegar="perfil" aria-label="Abrir mi información personal">
           <span id="avatar-iniciales" aria-hidden="true">UP</span>
         </a>
@@ -385,6 +419,7 @@
             <a class="boton boton--secundario" href="#configuracion" data-navegar="configuracion">Volver a configuración</a>
           </div>
           <p id="mensaje-perfil" role="status"></p>
+          <button id="cerrar-sesion" type="button">Cerrar sesión</button>
         </form>
       </div>
     </section>
