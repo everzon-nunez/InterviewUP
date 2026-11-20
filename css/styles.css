@@ -2332,3 +2332,141 @@ progress::-moz-progress-bar {
     animation: none;
   }
 }
+
+
+/* Acceso local */
+#acceso {
+  width: min(28rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: clamp(1.25rem, 5vw, 2.5rem);
+  border: 1px solid #dbe5f4;
+  border-radius: 1.25rem;
+  color: #142342;
+  background: #fff;
+  box-shadow: 0 1.5rem 4rem #14234225;
+}
+#acceso::backdrop { background: #eef4ff; }
+#acceso .acceso-marca { font-weight: 800; font-size: 1.3rem; }
+#acceso .acceso-marca span { color: #1d4ed8; }
+#acceso h1 { margin: .75rem 0 .25rem; }
+#acceso form, #acceso label { display: grid; gap: .5rem; }
+#acceso form { margin-top: 1.25rem; gap: .85rem; }
+#acceso label[hidden], #acceso-mensaje:empty { display: none; }
+#acceso label:not([hidden]):has([type="checkbox"]) { display: flex; align-items: start; }
+#acceso input:not([type="checkbox"]), #acceso button, #cerrar-sesion {
+  min-height: 2.75rem;
+  padding: .5rem .8rem;
+  border: 1px solid #8293ae;
+  border-radius: .6rem;
+  font: inherit;
+}
+#acceso input { min-width: 0; }
+#acceso button, #cerrar-sesion { cursor: pointer; background: #fff; color: #1d4ed8; }
+#acceso button.acceso-enviar { background: #1d4ed8; color: #fff; font-weight: 700; }
+#acceso button:disabled { opacity: .65; cursor: wait; }
+#acceso-mensaje { margin: 0; color: #913326; }
+
+#cerrar-sesion {
+  display: block;
+  margin: 1rem auto 0;
+  border-color: #f2b8bd;
+  background: #fff0f1;
+  color: #9f2435;
+  font-weight: 700;
+}
+
+#cerrar-sesion:hover {
+  border-color: #e58d97;
+  background: #ffe2e5;
+}
+
+#cerrar-sesion:focus-visible {
+  outline: 3px solid #9f2435;
+  outline-offset: 3px;
+}
+.boton-tema {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid var(--borde);
+  border-radius: 50%;
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.boton-tema:hover {
+  background: var(--azul-suave);
+}
+
+.boton-tema:focus-visible {
+  outline: 2px solid var(--azul-oscuro);
+  outline-offset: 3px;
+}
+
+:root[data-tema="oscuro"] {
+  color-scheme: dark;
+  --fondo: #0f172a;
+  --superficie: #182338;
+  --superficie-secundaria: #202e45;
+  --texto: #f1f5f9;
+  --texto-secundario: #b8c6db;
+  --borde: #47556d;
+  --azul-oscuro: #a5c8ff;
+  --azul-suave: #23385c;
+  --verde: #a4edbc;
+  --verde-suave: #18382b;
+  --verde-borde: #3c7355;
+  --naranja: #ffdc9a;
+  --naranja-suave: #3d2e1b;
+  --naranja-borde: #796035;
+  --morado: #ddc4ff;
+  --morado-suave: #33274d;
+  --celeste: #a4e2ff;
+  --celeste-suave: #173649;
+  --celeste-borde: #38647d;
+  --rojo: #ffb4bd;
+  --rojo-suave: #44252e;
+  --rojo-borde: #86505b;
+}
+
+/* El login y el aviso de guardado tienen colores propios. */
+[data-tema="oscuro"] #acceso,
+[data-tema="oscuro"] #dialogo-guardado-perfil {
+  background: var(--superficie);
+  color: var(--texto);
+  border-color: var(--borde);
+}
+
+[data-tema="oscuro"] #acceso::backdrop {
+  background: var(--fondo);
+}
+
+[data-tema="oscuro"] #acceso .acceso-marca span,
+[data-tema="oscuro"] #acceso button:not(.acceso-enviar) {
+  color: var(--azul-oscuro);
+}
+
+[data-tema="oscuro"] #acceso button:not(.acceso-enviar),
+[data-tema="oscuro"] .opcion:hover,
+[data-tema="oscuro"] .pestanas-progreso {
+  background: var(--superficie-secundaria);
+}
+
+[data-tema="oscuro"] #acceso-mensaje {
+  color: var(--rojo);
+}
+
+[data-tema="oscuro"] .etiqueta--positiva,
+[data-tema="oscuro"] .tarjeta-estadistica__icono {
+  background: var(--verde-suave);
+}
+
+[data-tema="oscuro"] .etiqueta--pendiente {
+  background: var(--naranja-suave);
+}
