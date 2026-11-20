@@ -1,26 +1,20 @@
-"use strict";
-
-/* ==========================================================
-   INTERVIEWUP
-   JavaScript compatible con el HTML y CSS proporcionados.
-   ========================================================== */
-
+// js/main.js
 (() => {
-  /* --------------------------------------------------------
-     1. UTILIDADES Y CONFIGURACIÓN
-     -------------------------------------------------------- */
+  "use strict";
 
-  const $ = (selector, contexto = document) =>
-    contexto.querySelector(selector);
-
-  const $$ = (selector, contexto = document) =>
-    [...contexto.querySelectorAll(selector)];
+  const $ = (id) => document.getElementById(id);
+  const todos = (selector, raiz = document) => Array.from(raiz.querySelectorAll(selector));
+  const ahora = () => new Date().toISOString();
+  const copiar = (valor) => JSON.parse(JSON.stringify(valor));
+  const promedio = (valores) => valores.length
+    ? Math.round(valores.reduce((total, valor) => total + valor, 0) / valores.length)
+    : 0;
 
   const CLAVE_DATOS = "interviewup.datos.v1";
   const CLAVE_TEXTO = "interviewup.texto.v1";
-
-  const TIEMPO_PENSAR = 30;
-  const TIEMPO_RESPONDER = 120;
+  const SEGUNDOS_PENSAR = 30;
+  const SEGUNDOS_RESPONDER = 120;
+  const POR_PAGINA = 12;
 
   const PUESTOS = {
     "desarrollador-junior": "Desarrollador Junior",
@@ -45,9 +39,16 @@
 
   const TIPOS = {
     personal: "Personal y experiencias",
-    situacional: "Caso situacional",
+    situacional: "Situacional",
     conocimiento: "Conocimiento profesional",
     "caso-tecnico": "Caso técnico"
+  };
+
+  const TIPOS_POR_TEMA = {
+    personales: ["personal"],
+    situacionales: ["situacional"],
+    conocimientos: ["conocimiento", "caso-tecnico"],
+    mixta: Object.keys(TIPOS)
   };
 
   const NIVELES = {
@@ -57,119 +58,26 @@
     4: "Me siento muy preparado"
   };
 
-  const CRITERIOS = {
-    desarrollo: {
-      nombre: "Desarrollo del texto",
-      descripcion:
-        "Cuenta las palabras de la respuesta: " +
-        "menos de 15 = 25 puntos; de 15 a 39 = 50; " +
-        "de 40 a 79 = 75; desde 80 = 100. " +
-        "La longitud no demuestra calidad."
-    },
-
-    organizacion: {
-      nombre: "Organización explícita",
-      descripcion:
-        "Comprueba cuatro señales escritas: contexto, " +
-        "objetivo, acción y cierre. Cada señal suma 25 puntos. " +
-        "Detectar palabras no garantiza una estructura correcta."
-    },
-
-    star: {
-      nombre: "Apartados STAR completados",
-      descripcion:
-        "Cuenta los campos STAR con textos distintos de al menos tres palabras. " +
-        "Cada apartado suma 25 puntos. " +
-        "No verifica la veracidad ni la calidad del ejemplo."
-    }
+  const STAR = {
+    situacion: "Situación",
+    tarea: "Tarea",
+    accion: "Acción",
+    resultado: "Resultado"
   };
 
-  function crearId() {
-    if (globalThis.crypto?.randomUUID) {
-      return crypto.randomUUID();
-    }
+  const CRITERIOS = {
+    organizacion: "Organización explícita",
+    star: "Apartados STAR completados",
+    desarrollo: "Desarrollo del texto"
+  };
 
-    return (
-      Date.now().toString(36) +
-      "-" +
-      Math.random().toString(36).slice(2)
-    );
-  }
+  const GUIAS = {
+    practicas: "Prepara un ejemplo de un curso o proyecto y explica qué parte desarrollaste tú.",
+    "primer-empleo": "Elige una experiencia que demuestre una habilidad del puesto.",
+    "con-experiencia": "Prepara un logro laboral y explica cómo comprobaste el resultado."
+  };
 
-  function escapar(valor = "") {
-    return String(valor).replace(/[&<>"']/g, caracter => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    })[caracter]);
-  }
-
-  function normalizar(texto = "") {
-    return texto
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase();
-  }
-
-  function contarPalabras(texto = "") {
-    return texto.trim().split(/\s+/).filter(Boolean).length;
-  }
-
-  function formatoReloj(segundos) {
-    const total = Math.max(0, Math.ceil(segundos));
-    const minutos = Math.floor(total / 60);
-    const resto = total % 60;
-
-    return (
-      String(minutos).padStart(2, "0") +
-      ":" +
-      String(resto).padStart(2, "0")
-    );
-  }
-
-  function formatoDuracion(segundos = 0) {
-    const minutos = Math.floor(segundos / 60);
-
-    if (minutos < 60) {
-      return `${minutos} min`;
-    }
-
-    return `${Math.floor(minutos / 60)} h ${minutos % 60} min`;
-  }
-
-  function formatoFecha(fecha) {
-    return new Intl.DateTimeFormat("es-PE", {
-      day: "numeric",
-      month: "short",
-      year: "numeric"
-    }).format(new Date(fecha));
-  }
-
-  function mezclar(lista) {
-    const copia = [...lista];
-
-    for (let i = copia.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copia[i], copia[j]] = [copia[j], copia[i]];
-    }
-
-    return copia;
-  }
-
-  function listaHTML(elementos) {
-    return elementos.map(texto => `<li>${escapar(texto)}</li>`).join("");
-  }
-
-  function unicos(elementos) {
-    return [...new Set(elementos)];
-  }
-
-  /* --------------------------------------------------------
-     2. BANCO DE PREGUNTAS PREPARADAS
-     -------------------------------------------------------- */
-
+  // Cada sesión guarda una copia de sus preguntas para poder reabrirla o repetirla.
   const PERSONALES = [
     "Cuéntame sobre ti y explica por qué te interesa este puesto.",
     "Describe un proyecto académico o personal y explica tu aporte individual.",
@@ -178,21 +86,21 @@
     "Explica un error que cometiste y qué aprendiste de esa experiencia.",
     "Cuéntame cómo organizaste tus responsabilidades en una semana exigente.",
     "Describe una ocasión en la que recibiste comentarios sobre tu trabajo.",
-    "Explica qué conocimientos de tus estudios podrías aplicar en este puesto.",
+    "¿Qué conocimientos de tus estudios podrías aplicar en este puesto?",
     "Cuéntame sobre una iniciativa que tomaste sin que te la pidieran.",
     "Describe un logro de un curso, proyecto o práctica y cómo lo conseguiste."
   ];
 
   const SITUACIONALES = [
-    "Tienes dos tareas urgentes y no puedes terminarlas al mismo tiempo. ¿Cómo decides cuál atender primero?",
+    "Tienes dos tareas urgentes y no puedes terminarlas al mismo tiempo. ¿Cuál atenderías primero y por qué?",
     "Un compañero propone una solución con la que no estás de acuerdo. ¿Cómo manejarías la situación?",
     "Te asignan una tarea con instrucciones poco claras. ¿Qué harías antes de comenzar?",
     "Descubres un error poco antes de entregar un trabajo. ¿Cómo actuarías?",
-    "Una persona solicita un cambio que afecta el plazo acordado. ¿Cómo responderías?",
+    "Te solicitan un cambio que afecta el plazo acordado. ¿Cómo responderías?",
     "Necesitas ayuda para completar una tarea y el equipo está ocupado. ¿Qué harías?",
-    "Un usuario se muestra frustrado porque un problema continúa. ¿Cómo lo atenderías?",
-    "Detectas información contradictoria entre dos documentos. ¿Cómo procederías?",
-    "Debes explicar un problema técnico a alguien sin conocimientos del tema. ¿Cómo lo harías?",
+    "Un usuario está frustrado porque su problema continúa. ¿Cómo lo atenderías?",
+    "Dos documentos contienen información contradictoria. ¿Cómo procederías?",
+    "Debes explicar un problema técnico a una persona que desconoce el tema. ¿Cómo lo harías?",
     "Una solución que propusiste no funciona como esperabas. ¿Cómo continuarías?"
   ];
 
@@ -200,16 +108,15 @@
     "desarrollador-junior": [
       "¿Qué diferencia existe entre una variable local y una global?",
       "Explica qué es una API y da un ejemplo de uso.",
-      "¿Qué diferencia existe entre HTML, CSS y JavaScript?",
-      "¿Para qué sirve Git en un proyecto desarrollado en equipo?",
-      "Explica cómo comprobarías que una función produce el resultado esperado.",
+      "¿Qué función cumplen HTML, CSS y JavaScript en una página web?",
+      "¿Para qué sirve Git cuando varias personas desarrollan el mismo proyecto?",
+      "¿Cómo comprobarías que una función produce el resultado esperado?",
       "¿Qué diferencia existe entre una lista y un conjunto?",
-      "¿Cómo investigarías un error que solo aparece en determinadas entradas?",
+      "¿Cómo investigarías un error que aparece solo con determinadas entradas?",
       "Explica qué es una consulta SQL y para qué se utiliza.",
       "¿Por qué conviene validar los datos de un formulario?",
       "¿Qué significa separar responsabilidades dentro de un programa?"
     ],
-
     "practicante-sistemas": [
       "Explica la diferencia entre un sistema operativo y una aplicación.",
       "¿Qué es una dirección IP y para qué se utiliza?",
@@ -222,7 +129,6 @@
       "¿Qué información recogerías antes de instalar un programa?",
       "¿Cómo comprobarías que un cambio en un sistema funciona?"
     ],
-
     "analista-datos-junior": [
       "¿Qué diferencia existe entre media y mediana?",
       "¿Cómo identificarías valores faltantes en un conjunto de datos?",
@@ -235,12 +141,11 @@
       "¿Cómo comunicarías un hallazgo a una persona no técnica?",
       "¿Por qué es importante documentar las transformaciones de datos?"
     ],
-
     "soporte-ti": [
       "¿Qué comprobarías si un equipo no tiene acceso a internet?",
       "¿Qué información debe contener un ticket de soporte?",
       "¿Qué diferencia existe entre reiniciar y restablecer un equipo?",
-      "¿Cómo verificarías si un problema afecta a un usuario o a varios?",
+      "¿Cómo verificarías si un problema afecta a una persona o a varias?",
       "¿Qué es un controlador de dispositivo?",
       "¿Qué precauciones tomarías antes de modificar una configuración?",
       "¿Cómo comprobarías el espacio disponible en un equipo?",
@@ -248,13 +153,12 @@
       "¿Cómo verificarías que una incidencia quedó resuelta?",
       "¿Por qué se debe confirmar la identidad antes de restablecer un acceso?"
     ],
-
     "asistente-administrativo": [
       "¿Cómo organizarías documentos para facilitar su búsqueda?",
       "¿Qué comprobarías antes de enviar un reporte?",
-      "Explica cómo utilizarías una hoja de cálculo para controlar gastos.",
+      "¿Cómo utilizarías una hoja de cálculo para controlar gastos?",
       "¿Qué diferencia existe entre una fecha de emisión y una de vencimiento?",
-      "¿Cómo registrarías acuerdos de una reunión?",
+      "¿Cómo registrarías los acuerdos de una reunión?",
       "¿Qué considerarías para programar una reunión con varias personas?",
       "¿Cómo tratarías información administrativa confidencial?",
       "¿Qué datos incluirías en un registro de seguimiento?",
@@ -265,2938 +169,1338 @@
 
   const CASOS = {
     "desarrollador-junior": [
-      {
-        texto:
-          "Una función debe sumar los importes de una lista. " +
-          "Explica tu solución y cómo la comprobarías.",
-        datos: "Entrada: [12, 8, 5]\nSalida esperada: 25"
-      },
-      {
-        texto:
-          "Un formulario permite registrar un correo vacío. " +
-          "Describe cómo corregirías y probarías el comportamiento.",
-        datos:
-          "Campo: correo electrónico\n" +
-          "Casos: vacío, formato inválido, formato válido"
-      }
+      ["Una función debe sumar los importes de una lista. Explica tu solución y cómo la comprobarías.",
+        "Entrada: [12, 8, 5]\nSalida esperada: 25"],
+      ["Un formulario permite registrar un correo vacío. ¿Cómo corregirías y probarías ese comportamiento?",
+        "Campo: correo electrónico.\nPruebas: vacío, formato inválido y formato válido."]
     ],
-
     "practicante-sistemas": [
-      {
-        texto:
-          "Un usuario no puede abrir una aplicación. " +
-          "Propón una secuencia de diagnóstico.",
-        datos:
-          "El equipo inicia correctamente.\n" +
-          "Otras aplicaciones funcionan.\n" +
-          "No se conoce aún el mensaje de error."
-      },
-      {
-        texto:
-          "Debes preparar una copia de seguridad antes de un cambio. " +
-          "Explica qué guardarías y cómo verificarías la recuperación.",
-        datos:
-          "Cambio previsto: actualización de una aplicación.\n" +
-          "Datos relevantes: configuración y documentos de trabajo."
-      }
+      ["Un usuario no puede abrir una aplicación. Propón una secuencia de diagnóstico.",
+        "El equipo inicia correctamente. Otras aplicaciones funcionan. Todavía se desconoce el mensaje de error."],
+      ["Debes preparar una copia de seguridad antes de una actualización. ¿Cómo comprobarías que puedes recuperar los datos?",
+        "Aplicación de trabajo con documentos y archivos de configuración."]
     ],
-
     "analista-datos-junior": [
-      {
-        texto:
-          "Revisa estos datos y describe qué comprobarías " +
-          "antes de calcular el promedio.",
-        datos: "Importes: 100, 120, vacío, 110, 10000"
-      },
-      {
-        texto:
-          "Un reporte muestra clientes repetidos. " +
-          "Explica cómo investigarías el origen y tratarías los duplicados.",
-        datos:
-          "Columnas: ID, nombre, correo.\n" +
-          "Dos filas comparten correo, pero tienen distinto ID."
-      }
+      ["Revisa estos importes. ¿Qué comprobarías antes de calcular el promedio?",
+        "Importes: 100, 120, vacío, 110, 10000."],
+      ["Un reporte muestra clientes repetidos. ¿Cómo investigarías los posibles duplicados?",
+        "Columnas: ID, nombre, correo.\nDos filas comparten correo, pero tienen distinto ID."]
     ],
-
     "soporte-ti": [
-      {
-        texto:
-          "Una persona no puede ingresar al sistema. " +
-          "Describe tus comprobaciones y cuándo escalarías el caso.",
-        datos:
-          "Mensaje: acceso rechazado.\n" +
-          "Otros usuarios sí pueden ingresar.\n" +
-          "No debes solicitar la contraseña."
-      },
-      {
-        texto:
-          "Una impresora no responde. " +
-          "Explica cómo aislarías el problema.",
-        datos:
-          "La impresora está encendida.\n" +
-          "Dos usuarios reportan el mismo problema."
-      }
+      ["Una persona no puede ingresar al sistema. Describe tus comprobaciones y cuándo escalarías el caso.",
+        "Mensaje: acceso rechazado. Otros usuarios sí pueden ingresar. No solicites la contraseña."],
+      ["Una impresora no responde. Explica cómo aislarías el problema.",
+        "La impresora está encendida y dos usuarios reportan el mismo problema."]
     ],
-
     "asistente-administrativo": [
-      {
-        texto:
-          "Debes revisar una relación de gastos. " +
-          "Calcula el total y describe las comprobaciones necesarias.",
-        datos:
-          "Transporte: 25\nMateriales: 40\nEnvíos: 15\n" +
-          "Total registrado: 90"
-      },
-      {
-        texto:
-          "Dos reuniones están programadas a la misma hora. " +
-          "Propón una reorganización y explica cómo la comunicarías.",
-        datos:
-          "Reunión A: 10:00–11:00.\n" +
-          "Reunión B: 10:30–11:30.\n" +
-          "Una persona debe asistir a ambas."
-      }
+      ["Revisa la relación de gastos. Calcula el total y explica qué comprobarías.",
+        "Transporte: 25\nMateriales: 40\nEnvíos: 15\nTotal registrado: 90"],
+      ["Dos reuniones se superponen. Propón una reorganización y explica cómo la comunicarías.",
+        "Reunión A: 10:00–11:00.\nReunión B: 10:30–11:30.\nUna persona debe asistir a ambas."]
     ]
   };
 
-  const BANCO = [];
-
-  Object.keys(PUESTOS).forEach(puesto => {
-    PERSONALES.forEach((texto, indice) => {
-      BANCO.push({
-        id: `${puesto}-personal-${indice + 1}`,
-        puesto,
-        tipo: "personal",
-        texto,
-        datos: ""
+  const banco = [];
+  for (const puesto of Object.keys(PUESTOS)) {
+    const grupos = [
+      ["personal", PERSONALES],
+      ["situacional", SITUACIONALES],
+      ["conocimiento", TECNICAS[puesto]],
+      ["caso-tecnico", CASOS[puesto]]
+    ];
+    for (const [tipo, entradas] of grupos) {
+      entradas.forEach((entrada, indice) => {
+        const [texto, datos] = Array.isArray(entrada) ? entrada : [entrada, ""];
+        const prefijo = tipo === "caso-tecnico" ? "caso" : tipo;
+        banco.push({ id: `${puesto}-${prefijo}-${indice + 1}`, puesto, tipo, texto, datos });
       });
-    });
-
-    SITUACIONALES.forEach((texto, indice) => {
-      BANCO.push({
-        id: `${puesto}-situacional-${indice + 1}`,
-        puesto,
-        tipo: "situacional",
-        texto,
-        datos: ""
-      });
-    });
-
-    TECNICAS[puesto].forEach((texto, indice) => {
-      BANCO.push({
-        id: `${puesto}-conocimiento-${indice + 1}`,
-        puesto,
-        tipo: "conocimiento",
-        texto,
-        datos: ""
-      });
-    });
-
-    CASOS[puesto].forEach((caso, indice) => {
-      BANCO.push({
-        id: `${puesto}-caso-${indice + 1}`,
-        puesto,
-        tipo: "caso-tecnico",
-        texto: caso.texto,
-        datos: caso.datos
-      });
-    });
-  });
-
-  function preguntasDisponibles(puesto, tema) {
-    return BANCO.filter(pregunta => {
-      if (pregunta.puesto !== puesto) return false;
-
-      if (tema === "personales") {
-        return pregunta.tipo === "personal";
-      }
-
-      if (tema === "situacionales") {
-        return pregunta.tipo === "situacional";
-      }
-
-      if (tema === "conocimientos") {
-        return ["conocimiento", "caso-tecnico"].includes(pregunta.tipo);
-      }
-
-      return true;
-    });
-  }
-
-  function seleccionarPreguntas(configuracion) {
-    const disponibles = preguntasDisponibles(
-      configuracion.puesto,
-      configuracion.tema
-    );
-
-    /*
-      En una práctica de conocimientos se incorpora un caso técnico.
-      En una práctica mixta se procura incluir varios tipos.
-    */
-    let seleccion = [];
-
-    const tiposPrioritarios =
-      configuracion.tema === "mixta"
-        ? ["personal", "situacional", "conocimiento", "caso-tecnico"]
-        : configuracion.tema === "conocimientos"
-          ? ["caso-tecnico"]
-          : [];
-
-    for (const tipo of tiposPrioritarios) {
-      if (seleccion.length >= configuracion.cantidad) break;
-
-      const pregunta = mezclar(
-        disponibles.filter(item => item.tipo === tipo)
-      )[0];
-
-      if (pregunta) seleccion.push(pregunta);
     }
+  }
 
-    const ids = new Set(seleccion.map(item => item.id));
+  function normalizar(valor) {
+    return String(valor ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  }
 
-    seleccion.push(
-      ...mezclar(disponibles.filter(item => !ids.has(item.id)))
-        .slice(0, configuracion.cantidad - seleccion.length)
+  function palabras(valor) {
+    return String(valor ?? "").trim().match(/\S+/g)?.length || 0;
+  }
+
+  function fecha(valor) {
+    return new Date(valor).toLocaleString("es-PE", {
+      day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+    });
+  }
+
+  function duracion(valor) {
+    const segundos = Math.max(0, Math.floor(Number(valor) || 0));
+    if (segundos < 60) return `${segundos} s`;
+    const resto = segundos % 60;
+    return `${Math.floor(segundos / 60)} min${resto ? ` ${resto} s` : ""}`;
+  }
+
+  function texto(id, valor) {
+    $(id).textContent = valor ?? "";
+  }
+
+  function mensaje(id, contenido = "") {
+    texto(id, contenido);
+    $(id).hidden = !contenido;
+  }
+
+  function elemento(etiqueta, contenido = "", clase = "") {
+    const nodo = document.createElement(etiqueta);
+    nodo.textContent = contenido;
+    if (clase) nodo.className = clase;
+    return nodo;
+  }
+
+  function boton(etiqueta, accion, clase = "boton boton--secundario") {
+    const nodo = elemento("button", etiqueta, clase);
+    nodo.type = "button";
+    nodo.addEventListener("click", accion);
+    return nodo;
+  }
+
+  function listar(id, valores, alternativa) {
+    const entradas = valores.length ? [...new Set(valores)] : [alternativa];
+    $(id).replaceChildren(...entradas.map((valor) => elemento("li", valor)));
+  }
+
+  let avisoId;
+  function notificar(contenido) {
+    clearTimeout(avisoId);
+    texto("anuncio", contenido);
+    texto("notificacion", contenido);
+    avisoId = setTimeout(() => {
+      texto("anuncio", "");
+      texto("notificacion", "");
+    }, 6000);
+  }
+
+  // Almacenamiento y recuperación del historial
+  const camposPerfil = ["nombre", "estudios", "proyectos", "experiencias"];
+  const perfilVacio = Object.fromEntries(camposPerfil.map((c) => [c, ""]));
+  let datos = { version: 1, perfil: { ...perfilVacio }, sesiones: [] };
+  let ultimaLectura = null;
+  let bloqueado = false;
+
+  function sesionValida(s) {
+    return Boolean(
+      s && typeof s.id === "string" &&
+      ["pendiente", "finalizada"].includes(s.estado) &&
+      typeof s.actualizada === "string" && Number.isFinite(Date.parse(s.creada)) &&
+      (s.estado !== "finalizada" || Number.isFinite(Date.parse(s.finalizada))) &&
+      PUESTOS[s.configuracion?.puesto] && TEMAS[s.configuracion?.tema] &&
+      Array.isArray(s.preguntas) && s.preguntas.length &&
+      s.preguntas.every((p) => p?.id && typeof p.texto === "string" && p.texto.trim()) &&
+      Number.isInteger(s.indice) && s.preguntas[s.indice] &&
+      s.reloj && Number.isFinite(s.reloj.restante) &&
+      ["pensar", "responder", "agotado", "revision"].includes(s.reloj.fase) &&
+      Number.isFinite(s.segundosActivos) && s.borradores &&
+      Array.isArray(s.respuestas) && s.respuestas.every((r) =>
+        typeof r?.texto === "string" && r.star && r.analisis &&
+        Array.isArray(r.analisis.indicadores) && Array.isArray(r.analisis.fortalezas) &&
+        Array.isArray(r.analisis.mejoras) && Array.isArray(r.analisis.recomendaciones))
     );
-
-    /*
-      Las preguntas se eligen aleatoriamente del banco preparado
-      y después se ordenan por etapas de entrevista.
-    */
-    const vistas = new Set(datos.sesiones.flatMap(sesion =>
-      sesion.respuestas.map(respuesta => respuesta.preguntaId)
-    ));
-    if (seleccion.length && seleccion.every(pregunta => vistas.has(pregunta.id))) {
-      const tiposSeleccionados = new Set(seleccion.map(p => p.tipo));
-      const candidatas = disponibles.filter(pregunta => !vistas.has(pregunta.id));
-      const nueva = mezclar(candidatas.filter(p => tiposSeleccionados.has(p.tipo)))[0] ||
-        mezclar(candidatas)[0];
-      if (nueva) {
-        const mismoTipo = seleccion.findIndex(p => p.tipo === nueva.tipo);
-        const reemplazable = seleccion.findIndex(p =>
-          seleccion.filter(item => item.tipo === p.tipo).length > 1
-        );
-        if (mismoTipo >= 0) seleccion[mismoTipo] = nueva;
-        else if (reemplazable >= 0) seleccion[reemplazable] = nueva;
-      }
-    }
-
-    const orden = {
-      personal: 0,
-      situacional: 1,
-      conocimiento: 2,
-      "caso-tecnico": 3
-    };
-
-    return seleccion.sort((a, b) => orden[a.tipo] - orden[b.tipo]);
   }
 
-  /* --------------------------------------------------------
-     3. ALMACENAMIENTO Y ESTADO
-     -------------------------------------------------------- */
-
-  function datosIniciales() {
-    return {
-      version: 1,
-      perfil: {
-        nombre: "",
-        estudios: "",
-        proyectos: "",
-        experiencias: ""
-      },
-      sesiones: []
-    };
-  }
-
-  let contenidoLeido = null;
-  let almacenamientoBloqueado = false;
-
-  function validarSesion(sesion) {
-    const fechaValida = valor =>
-      typeof valor === "string" && Number.isFinite(Date.parse(valor));
-    return sesion &&
-      ["pendiente", "finalizada"].includes(sesion.estado) &&
-      typeof sesion.id === "string" &&
-      fechaValida(sesion.creada) && fechaValida(sesion.actualizada) &&
-      (sesion.estado !== "finalizada" || fechaValida(sesion.finalizada)) &&
-      Object.hasOwn(PUESTOS, sesion.configuracion?.puesto) &&
-      Object.hasOwn(TEMAS, sesion.configuracion?.tema) &&
-      Object.hasOwn(CONTEXTOS, sesion.configuracion?.contexto) &&
-      Array.isArray(sesion.preguntas) && sesion.preguntas.length > 0 &&
-      sesion.preguntas.every(p => p && typeof p.id === "string" &&
-        typeof p.texto === "string" && Object.hasOwn(TIPOS, p.tipo)) &&
-      new Set(sesion.preguntas.map(p => p.id)).size === sesion.preguntas.length &&
-      Number.isInteger(sesion.indice) && sesion.indice >= 0 &&
-      sesion.indice < sesion.preguntas.length &&
-      Number.isFinite(sesion.segundosActivos) &&
-      sesion.reloj && Number.isFinite(sesion.reloj.restante) &&
-      ["pensar", "responder", "agotado", "revision"].includes(sesion.reloj.fase) &&
-      sesion.borradores && Object.values(sesion.borradores).every(validarTexto) &&
-      Array.isArray(sesion.respuestas) && sesion.respuestas.every(r =>
-        validarTexto(r) && sesion.preguntas.some(p => p.id === r.preguntaId) &&
-        validarAnalisis(r.analisis) && Array.isArray(r.intentos) &&
-        r.intentos.every(i => validarTexto(i) && validarAnalisis(i.analisis)));
-  }
-
-  function validarTexto(item) {
-    return item && typeof item.texto === "string" && item.star &&
-      ["situacion", "tarea", "accion", "resultado"].every(
-        clave => typeof item.star[clave] === "string"
-      );
-  }
-
-  function validarAnalisis(item) {
-    return item && Number.isFinite(item.puntuacion) &&
-      Array.isArray(item.indicadores) && item.indicadores.every(i =>
-        i && Object.hasOwn(CRITERIOS, i.clave) && Number.isFinite(i.valor)) &&
-      ["fortalezas", "mejoras", "recomendaciones", "apartados"].every(
-        clave => Array.isArray(item[clave])
-      ) && item.apartados.every(a => a && typeof a.clave === "string");
-  }
-
-  function cargarDatos() {
+  function leerDatos() {
     try {
-      const contenido = localStorage.getItem(CLAVE_DATOS);
-
-      contenidoLeido = contenido;
-
-      if (contenido === null) return datosIniciales();
-
-      const datos = JSON.parse(contenido);
-
-      if (
-        datos.version !== 1 ||
-        !Array.isArray(datos.sesiones) ||
-        !datos.perfil || !datos.sesiones.every(validarSesion)
-      ) {
-        throw new Error("Formato de datos incompatible.");
+      ultimaLectura = localStorage.getItem(CLAVE_DATOS);
+      if (ultimaLectura === null) return;
+      const guardado = JSON.parse(ultimaLectura);
+      if (guardado?.version !== 1 || !guardado.perfil ||
+          !Array.isArray(guardado.sesiones) || !guardado.sesiones.every(sesionValida) ||
+          new Set(guardado.sesiones.map((s) => s.id)).size !== guardado.sesiones.length) {
+        throw new Error("Historial incompatible.");
       }
-
-      for (const campo of Object.keys(datosIniciales().perfil)) {
-        if (typeof datos.perfil[campo] !== "string") datos.perfil[campo] = "";
-      }
-
-      return datos;
-    } catch (error) {
-      almacenamientoBloqueado = true;
-      console.error("No se pudieron cargar los datos:", error);
-
-      setTimeout(() => {
-        notificar(
-          "No se pudieron recuperar los datos guardados. " +
-          "Se conservarán los datos originales. Recarga para volver a intentar."
-        );
-      }, 0);
-
-      return datosIniciales();
+      datos = guardado;
+    } catch {
+      bloqueado = true;
+      mensaje("estado-almacenamiento",
+        "No se pudo leer el historial. Se conservaron los datos existentes. Revisa el almacenamiento del navegador y recarga.");
     }
   }
 
-  let datos = cargarDatos();
+  function conflicto() {
+    bloqueado = true;
+    mensaje("estado-almacenamiento",
+      "Otra pestaña modificó tus prácticas. Copia tu borrador y recarga para ver la versión más reciente.");
+  }
 
-  let vistaActual = "inicio";
-  let sesionActiva = null;
-  let resultadoActivo = null;
-  let comparacionActiva = null;
-
-  let configuracionPendiente = null;
-  let preguntasPendientes = null;
-  let preguntaElegida = null;
-
-  let intervalo = null;
-  let inicioActividad = null;
-  let avisoMostrado = false;
-  let temporizadorNotificacion = null;
-
-  let escalaTexto = 100;
-
-  function guardarDatos(candidato = datos) {
-    if (almacenamientoBloqueado) {
-      notificar("El guardado está bloqueado para conservar los datos originales.");
+  function guardar(candidato) {
+    if (bloqueado) {
+      notificar("El guardado está bloqueado. Copia tu respuesta antes de recargar.");
       return false;
     }
-
     try {
-      if (localStorage.getItem(CLAVE_DATOS) !== contenidoLeido) {
-        almacenamientoBloqueado = true;
-        notificar("Otra pestaña cambió tus datos. Copia tu borrador y recarga.");
+      if (localStorage.getItem(CLAVE_DATOS) !== ultimaLectura) {
+        conflicto();
         return false;
       }
-
       const contenido = JSON.stringify(candidato);
-      if (contenido !== contenidoLeido) {
-        localStorage.setItem(CLAVE_DATOS, contenido);
-        contenidoLeido = contenido;
-      }
+      if (contenido !== ultimaLectura) localStorage.setItem(CLAVE_DATOS, contenido);
+      ultimaLectura = contenido;
+      datos = candidato;
+      mensaje("estado-almacenamiento");
       return true;
-    } catch (error) {
-      console.error("No se pudieron guardar los datos:", error);
-
-      notificar(
-        "No se pudo guardar en este navegador. " +
-        "El almacenamiento puede estar bloqueado o lleno."
-      );
-
+    } catch {
+      mensaje("estado-almacenamiento",
+        "Cambios sin guardar. El almacenamiento está lleno o bloqueado. Copia tu respuesta antes de cerrar.");
       return false;
     }
   }
 
-  function persistirSesion(nueva) {
-    const existe = datos.sesiones.some(sesion => sesion.id === nueva.id);
-    const sesiones = existe
-      ? datos.sesiones.map(sesion => sesion.id === nueva.id ? nueva : sesion)
-      : [...datos.sesiones, nueva];
-    const candidato = { ...datos, sesiones };
-
-    if (!guardarDatos(candidato)) return false;
-
-    datos = candidato;
-    if (sesionActiva?.id === nueva.id) sesionActiva = nueva;
-    return true;
+  function persistir(sesion) {
+    const sesiones = datos.sesiones.slice();
+    const indice = sesiones.findIndex((s) => s.id === sesion.id);
+    if (indice < 0) sesiones.push(copiar(sesion));
+    else sesiones[indice] = copiar(sesion);
+    return guardar({ ...datos, sesiones });
   }
 
-  function buscarSesion(id) {
-    return datos.sesiones.find(sesion => sesion.id === id);
+  function sesionesOrdenadas(estado) {
+    return datos.sesiones.filter((s) => !estado || s.estado === estado)
+      .sort((a, b) => b.actualizada.localeCompare(a.actualizada));
   }
 
-  function respuestaGuardada(sesion, indice) {
-    return sesion.respuestas.find(
-      respuesta => respuesta.preguntaId === sesion.preguntas[indice].id
-    );
-  }
+  window.addEventListener("storage", (evento) => {
+    if (evento.key !== CLAVE_DATOS && evento.key !== null) return;
+    if (evento.key === CLAVE_DATOS && evento.newValue === ultimaLectura) return;
+    conflicto();
+  });
 
-  function borradorVacio() {
-    return {
-      texto: "",
-      star: {
-        situacion: "",
-        tarea: "",
-        accion: "",
-        resultado: ""
+  let vista = "";
+  let activa = null;
+  let preparada = null;
+  let resultadoId = null;
+  let preguntaElegida = null;
+  let compararCon = null;
+  let recienteComparada = null;
+  let paginaBanco = 0;
+  let relojId = null;
+  let ultimoPulso = null;
+  let guardadoId = null;
+
+  const progreso = {
+    resultados: "Mis resultados",
+    historial: "Mis prácticas",
+    comparacion: "Comparar intentos",
+    banco: "Banco de preguntas"
+  };
+
+  function crearPestanas() {
+    for (const destino of Object.keys(progreso)) {
+      const nav = elemento("nav", "", "pestanas-progreso");
+      nav.setAttribute("aria-label", "Secciones de mis prácticas");
+      for (const [clave, nombre] of Object.entries(progreso)) {
+        const enlace = elemento("a", nombre);
+        enlace.href = `#${clave}`;
+        enlace.dataset.navegar = clave;
+        if (clave === destino) enlace.setAttribute("aria-current", "page");
+        nav.append(enlace);
       }
-    };
+      $(destino).prepend(nav);
+    }
   }
-
-  function borradorActual() {
-    if (!sesionActiva) return borradorVacio();
-
-    const pregunta = sesionActiva.preguntas[sesionActiva.indice];
-
-    return (
-      sesionActiva.borradores[pregunta.id] ||
-      borradorVacio()
-    );
-  }
-
-  function notificar(mensaje) {
-    clearTimeout(temporizadorNotificacion);
-
-    $("#notificacion").textContent = mensaje;
-    $("#anuncio").textContent = mensaje;
-
-    temporizadorNotificacion = setTimeout(() => {
-      $("#notificacion").textContent = "";
-      $("#anuncio").textContent = "";
-    }, 6500);
-  }
-
-  /* --------------------------------------------------------
-     4. NAVEGACIÓN
-     -------------------------------------------------------- */
 
   function cerrarMenu() {
-    $("#boton-menu").setAttribute("aria-expanded", "false");
-    $("#navegacion-principal").classList.remove("navegacion--abierta");
+    $("boton-menu").setAttribute("aria-expanded", "false");
+    $("navegacion-principal").classList.remove("navegacion--abierta");
   }
 
-  function navegar(destino, actualizarURL = true) {
-    const permitidas = $$("[data-vista]").map(vista => vista.id);
+  function navegar(destino, registrar = true) {
+    if (!$(destino)?.matches("[data-vista]")) destino = "inicio";
+    if (destino === "simulacion" && activa?.estado !== "pendiente") destino = "configuracion";
+    if (destino === "preparacion" && !preparada) destino = "configuracion";
 
-    if (!permitidas.includes(destino)) destino = "inicio";
-
-    /*
-      Si se abandona una práctica, se conserva el borrador
-      y se detienen sus temporizadores.
-    */
-    if (
-      vistaActual === "simulacion" &&
-      destino !== "simulacion" &&
-      sesionActiva?.estado === "pendiente"
-    ) {
-      capturarBorrador();
-      detenerReloj();
-      pausarActividad();
-
-      if (!guardarDatos()) {
-        iniciarActividad();
-        iniciarReloj();
-        if (!actualizarURL) {
-          history.replaceState({ vista: vistaActual }, "", "#simulacion");
-        }
-        return false;
-      }
+    if (vista === "simulacion" && activa && destino !== vista && !pausarYGuardar()) {
+      iniciarReloj();
+      history.replaceState(null, "", "#simulacion");
+      return false;
     }
 
-    if (destino === "simulacion" && sesionActiva?.estado !== "pendiente") {
-      destino = "configuracion";
+    vista = destino;
+    for (const seccion of todos("[data-vista]")) {
+      seccion.hidden = seccion.id !== destino;
+      seccion.classList.toggle("vista--activa", !seccion.hidden);
     }
 
-    if (destino === "preparacion" && !configuracionPendiente) {
-      destino = "configuracion";
+    const grupo = Object.hasOwn(progreso, destino) ? "progreso" :
+      ["preparacion", "simulacion"].includes(destino) ? "configuracion" : destino;
+
+    for (const enlace of todos(".navegacion__enlace, .barra-inferior [data-movil]")) {
+      const movil = enlace.hasAttribute("data-movil");
+      const actual = movil ? enlace.dataset.movil === grupo : enlace.dataset.navegar === destino;
+      enlace.classList.toggle("activo", actual);
+      if (actual) enlace.setAttribute("aria-current", movil ? "true" : "page");
+      else enlace.removeAttribute("aria-current");
     }
-
-    $$("[data-vista]").forEach(vista => {
-      const activa = vista.id === destino;
-
-      vista.hidden = !activa;
-      vista.classList.toggle("vista--activa", activa);
-    });
-
-    vistaActual = destino;
-    const vistasProgreso = [
-  "resultados",
-  "historial",
-  "comparacion",
-  "banco"
-];
-
-if (vistasProgreso.includes(destino)) {
-  const seccion = document.getElementById(destino);
-  let navegacionProgreso = seccion.querySelector(".pestanas-progreso");
-
-  if (!navegacionProgreso) {
-    navegacionProgreso = document.createElement("nav");
-
-    navegacionProgreso.className = "pestanas-progreso";
-    navegacionProgreso.setAttribute(
-      "aria-label",
-      "Secciones de Mi progreso"
-    );
-
-    navegacionProgreso.innerHTML = `
-      <a href="#resultados" data-navegar="resultados">
-        Mis resultados
-      </a>
-
-      <a href="#historial" data-navegar="historial">
-        Mis prácticas
-      </a>
-
-      <a href="#comparacion" data-navegar="comparacion">
-        Comparar intentos
-      </a>
-
-      <a href="#banco" data-navegar="banco">
-        Banco de preguntas
-      </a>
-    `;
-
-    seccion.prepend(navegacionProgreso);
-  }
-
-  navegacionProgreso.querySelectorAll("a").forEach(enlace => {
-    if (enlace.dataset.navegar === destino) {
-      enlace.setAttribute("aria-current", "page");
-    } else {
-      enlace.removeAttribute("aria-current");
-    }
-  });
-}
-    const grupoMovil = {
-  inicio: "inicio",
-  configuracion: "configuracion",
-  preparacion: "configuracion",
-  simulacion: "configuracion",
-  historial: "progreso",
-  resultados: "progreso",
-  comparacion: "progreso",
-  banco: "progreso",
-  perfil: "perfil",
-  ayuda: "ayuda"
-};
-
-$$(".barra-inferior [data-movil]").forEach(elemento => {
-  const activo = elemento.dataset.movil === grupoMovil[destino];
-
-  elemento.classList.toggle("activo", activo);
-
-  if (activo) {
-    elemento.setAttribute("aria-current", "true");
-  } else {
-    elemento.removeAttribute("aria-current");
-  }
-});
-
-$("#menu-progreso-movil").open = false;
-
-    $$(".navegacion__enlace").forEach(enlace => {
-      if (enlace.dataset.navegar === destino) {
-        enlace.setAttribute("aria-current", "page");
-      } else {
-        enlace.removeAttribute("aria-current");
-      }
-    });
 
     cerrarMenu();
-
     if (destino === "inicio") renderInicio();
-    if (destino === "historial") renderHistorial();
-    if (destino === "banco") renderBanco();
-    if (destino === "perfil") rellenarPerfil();
-    if (destino === "preparacion") {
-      const guias = {
-        practicas: "Prepara un ejemplo de un curso o proyecto y explica tu aporte.",
-        "primer-empleo": "Elige una experiencia que demuestre una habilidad del puesto.",
-        "con-experiencia": "Prepara un logro laboral y explica cómo mediste el resultado."
-      };
-      $("#guia-contexto").textContent = guias[configuracionPendiente.contexto];
-    }
-    if (destino === "comparacion") rellenarComparadores();
-    if (destino === "resultados") renderResultados();
-
+    if (destino === "perfil") camposPerfil.forEach((c) => { $(c).value = datos.perfil[c] || ""; });
+    if (destino === "configuracion") resumenConfiguracion();
+    if (destino === "preparacion") texto("guia-contexto", GUIAS[preparada.configuracion.contexto]);
     if (destino === "simulacion") {
       renderSimulacion();
-      iniciarActividad();
       iniciarReloj();
     }
+    if (destino === "historial") renderHistorial();
+    if (destino === "resultados") renderResultados();
+    if (destino === "banco") renderBanco();
+    if (destino === "comparacion") renderSelectoresComparacion();
 
-    const fragmento = `#${destino}`;
-    if (actualizarURL && location.hash !== fragmento) {
-      history.pushState({ vista: destino }, "", fragmento);
-    } else if (location.hash !== fragmento || history.state?.vista !== destino) {
-      history.replaceState({ vista: destino }, "", fragmento);
+    if (location.hash !== `#${destino}`) {
+      history[registrar ? "pushState" : "replaceState"](null, "", `#${destino}`);
     }
-
-    const titulo = $(`#${destino} h1`);
-
-    titulo?.focus();
-    window.scrollTo({ top: 0, behavior: "auto" });
+    $(destino).querySelector("h1")?.focus({ preventScroll: true });
+    window.scrollTo(0, 0);
     return true;
   }
 
-  document.addEventListener("click", evento => {
-    const ancla = evento.target.closest(
-      'a[href="#contenido-principal"], a[href^="#campo-"]'
-    );
-    if (ancla && !evento.ctrlKey && !evento.metaKey && !evento.shiftKey &&
-        !evento.altKey && evento.button === 0) {
-      const destino = document.getElementById(ancla.hash.slice(1));
-      if (destino) {
-        evento.preventDefault();
-        const control = destino.querySelector("input, textarea") || destino;
-        control.focus({ preventScroll: true });
-        control.scrollIntoView({ block: "start" });
-      }
+  document.addEventListener("click", (evento) => {
+    if (evento.button !== 0 || evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey) return;
+    const enlace = evento.target.closest("a");
+    if (enlace?.dataset.navegar) {
+      evento.preventDefault();
+      navegar(enlace.dataset.navegar);
       return;
     }
-    const enlace = evento.target.closest("[data-navegar]");
-
-    if (
-      !enlace ||
-      evento.ctrlKey ||
-      evento.metaKey ||
-      evento.shiftKey ||
-      evento.altKey ||
-      evento.button !== 0
-    ) {
-      return;
+    if (enlace?.hash === "#contenido-principal" || enlace?.hash.startsWith("#campo-")) {
+      const objetivo = $(enlace.hash.slice(1));
+      if (!objetivo) return;
+      evento.preventDefault();
+      const control = objetivo.matches("main") ? objetivo : objetivo.querySelector("input, textarea");
+      control?.focus({ preventScroll: true });
+      objetivo.scrollIntoView({ block: "start" });
     }
-
-    evento.preventDefault();
-    navegar(enlace.dataset.navegar);
   });
 
-  $("#boton-menu").addEventListener("click", () => {
-    const boton = $("#boton-menu");
-    const abierto = boton.getAttribute("aria-expanded") === "true";
+  window.addEventListener("hashchange", () => navegar(location.hash.slice(1), false));
 
-    boton.setAttribute("aria-expanded", String(!abierto));
-    $("#navegacion-principal").classList.toggle("navegacion--abierta", !abierto);
+  $("boton-menu").addEventListener("click", () => {
+    const abrir = $("boton-menu").getAttribute("aria-expanded") !== "true";
+    $("boton-menu").setAttribute("aria-expanded", String(abrir));
+    $("navegacion-principal").classList.toggle("navegacion--abierta", abrir);
   });
 
-  document.addEventListener("keydown", evento => {
-    if (
-      evento.key === "Escape" &&
-      $("#boton-menu").getAttribute("aria-expanded") === "true"
-    ) {
+  document.addEventListener("keydown", (evento) => {
+    if (evento.key === "Escape" && $("boton-menu").getAttribute("aria-expanded") === "true") {
       cerrarMenu();
-      $("#boton-menu").focus();
+      $("boton-menu").focus();
     }
   });
 
-  function destinoActual() {
-    const fragmento = location.hash.slice(1);
-    if (fragmento.startsWith("campo-")) return "perfil";
-    if (fragmento === "contenido-principal") {
-      return history.state?.vista || vistaActual;
-    }
-    return fragmento || "inicio";
-  }
-
-  window.addEventListener("popstate", () => {
-    const destino = destinoActual();
-    if (destino !== vistaActual) navegar(destino, false);
+  todos("[data-abrir-guia]").forEach((control) => {
+    control.addEventListener("click", () => $("dialogo-guia").showModal());
   });
 
-  /* --------------------------------------------------------
-     5. PERFIL
-     -------------------------------------------------------- */
+  // Perfil y configuración
+  function mostrarPerfil() {
+    const nombre = String(datos.perfil.nombre || "").trim();
+    const iniciales = nombre.split(/\s+/).slice(0, 2).map((parte) => parte.charAt(0)).join("");
+    texto("avatar-iniciales", iniciales.toUpperCase() || "UP");
+    texto("titulo-inicio", nombre ? `¡Bienvenido de nuevo, ${nombre}!` : "¡Bienvenido a InterviewUP!");
+    texto("estado-informacion-personal", camposPerfil.slice(1).some((c) => datos.perfil[c])
+      ? "Tu información está disponible durante la simulación."
+      : "Aún no has registrado estudios, proyectos o experiencias.");
+  }
+  const dialogoGuardado = $("dialogo-guardado-perfil");
+const tituloGuardado = $("titulo-guardado-perfil");
+const detalleGuardado = $("detalle-guardado-perfil");
+const iconoGuardado = $("icono-guardado-perfil");
+const cerrarGuardado = $("cerrar-guardado-perfil");
 
-  function rellenarPerfil() {
-    for (const campo of [
-      "nombre",
-      "estudios",
-      "proyectos",
-      "experiencias"
-    ]) {
-      $(`#${campo}`).value = datos.perfil[campo] || "";
-    }
+let temporizadorGuardado;
+
+function mostrarEstadoGuardado(estado, titulo, detalle, icono = "") {
+  dialogoGuardado.dataset.estado = estado;
+  tituloGuardado.textContent = titulo;
+  detalleGuardado.textContent = detalle;
+  iconoGuardado.textContent = icono;
+  cerrarGuardado.hidden = estado !== "error";
+}
+
+cerrarGuardado.addEventListener("click", () => {
+  dialogoGuardado.close();
+});
+
+dialogoGuardado.addEventListener("close", () => {
+  clearTimeout(temporizadorGuardado);
+});
+
+$("formulario-perfil").addEventListener("submit", (evento) => {
+  evento.preventDefault();
+
+  if (dialogoGuardado.open) return;
+
+  const perfil = Object.fromEntries(
+    camposPerfil.map((campo) => [campo, $(campo).value.trim()])
+  );
+
+  // Limpia el aviso anterior que aparecía debajo del formulario.
+  $("mensaje-perfil").textContent = "";
+
+  mostrarEstadoGuardado(
+    "guardando",
+    "Guardando tu información…",
+    "Un momento, por favor."
+  );
+
+  dialogoGuardado.showModal();
+
+  // Guarda de inmediato. La pausa de abajo es solo visual.
+  const guardado = guardar({ ...datos, perfil });
+
+  if (!guardado) {
+    mostrarEstadoGuardado(
+      "error",
+      "No se pudo guardar",
+      "Tus cambios siguen en el formulario. Cierra este aviso y vuelve a intentarlo.",
+      "!"
+    );
+    cerrarGuardado.focus();
+    return;
   }
 
-  function actualizarPerfilInterfaz() {
-    const perfil = datos.perfil;
+  mostrarPerfil();
 
-    const iniciales = perfil.nombre
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map(parte => parte[0])
-      .join("")
-      .toUpperCase();
+  temporizadorGuardado = setTimeout(() => {
+    mostrarEstadoGuardado(
+      "exito",
+      "Información guardada",
+      "Tu perfil se actualizó en este navegador.",
+      "✓"
+    );
 
-    $("#avatar-iniciales").textContent = iniciales || "UP";
+    temporizadorGuardado = setTimeout(() => {
+      dialogoGuardado.close();
+    }, 1800);
+  }, 500);
+ });
 
-    $("#titulo-inicio").textContent = perfil.nombre
-      ? `¡Bienvenido de vuelta, ${perfil.nombre}!`
-      : "¡Bienvenido a InterviewUP!";
+  const formularioConfig = $("formulario-configuracion");
 
-    const tieneInformacion = [
-      perfil.estudios,
-      perfil.proyectos,
-      perfil.experiencias
-    ].some(texto => texto.trim());
-
-    $("#estado-informacion-personal").textContent =
-      tieneInformacion
-        ? "Tu información está disponible para preparar respuestas."
-        : "Aún no has registrado información personal.";
-  }
-
-  $("#formulario-perfil").addEventListener("submit", evento => {
-    evento.preventDefault();
-
-    const perfil = {};
-    for (const campo of Object.keys(datosIniciales().perfil)) {
-      perfil[campo] = $(`#${campo}`).value.trim();
-    }
-
-    const candidato = { ...datos, perfil };
-    if (!guardarDatos(candidato)) {
-      $("#mensaje-perfil").textContent = "Cambios sin guardar. Puedes reintentar.";
-      return;
-    }
-
-    datos = candidato;
-    actualizarPerfilInterfaz();
-    $("#mensaje-perfil").textContent = "Información guardada en este navegador.";
-    notificar("Tu información personal se guardó.");
-  });
-
-  /* --------------------------------------------------------
-     6. CONFIGURACIÓN
-     -------------------------------------------------------- */
-
-  function leerConfiguracion() {
-    const formulario = $("#formulario-configuracion");
-    const valores = new FormData(formulario);
-
-    const cantidad = valores.get("cantidad") === "personalizada"
-      ? Number(valores.get("cantidadPersonalizada"))
-      : Number(valores.get("cantidad"));
-
+  function configuracionActual() {
+    const valores = new FormData(formularioConfig);
     return {
       puesto: valores.get("puesto") || "",
       contexto: valores.get("contexto") || "",
       tema: valores.get("tema") || "",
-      cantidad
+      cantidad: Number(valores.get("cantidad") === "personalizada"
+        ? $("cantidad-personalizada").value : valores.get("cantidad"))
     };
   }
 
-  function actualizarResumen() {
-    const configuracion = leerConfiguracion();
-
-    const personalizada =
-      $("#formulario-configuracion input[name='cantidad']:checked")
-        ?.value === "personalizada";
-
-    $("#campo-cantidad-personalizada").hidden = !personalizada;
-    $("#cantidad-personalizada").required = personalizada;
-    $("#cantidad-personalizada").disabled = !personalizada;
-
-    $("#resumen-puesto").textContent =
-      PUESTOS[configuracion.puesto] || "Sin seleccionar";
-
-    $("#resumen-contexto").textContent =
-      CONTEXTOS[configuracion.contexto] || "Sin seleccionar";
-
-    $("#resumen-tema").textContent =
-      TEMAS[configuracion.tema] || "Sin seleccionar";
-
-    $("#resumen-cantidad").textContent =
-      Number.isInteger(configuracion.cantidad) &&
-      configuracion.cantidad > 0
-        ? configuracion.cantidad
-        : "Sin definir";
-
-    $("#resumen-duracion").textContent =
-      configuracion.cantidad > 0
-        ? `Aprox. ${Math.ceil(
-            configuracion.cantidad *
-            (TIEMPO_PENSAR + TIEMPO_RESPONDER) / 60
-          )} min`
-        : "Por calcular";
-
-    if (configuracion.puesto && configuracion.tema) {
-      const disponibles = preguntasDisponibles(
-        configuracion.puesto,
-        configuracion.tema
-      ).length;
-
-      $("#cantidad-personalizada").max = disponibles;
-
-      $("#ayuda-cantidad").textContent =
-        `Puedes seleccionar entre 1 y ${disponibles} preguntas.`;
-    } else {
-      $("#cantidad-personalizada").removeAttribute("max");
-      $("#ayuda-cantidad").textContent = "Selecciona primero un puesto y un tema.";
-    }
-
-    $("#error-configuracion").hidden = true;
+  function disponibles(config) {
+    return banco.filter((p) =>
+      p.puesto === config.puesto && TIPOS_POR_TEMA[config.tema]?.includes(p.tipo));
   }
 
-  $("#formulario-configuracion").addEventListener(
-    "input",
-    actualizarResumen
-  );
+  function resumenConfiguracion() {
+    const personalizada = formularioConfig.elements.cantidad.value === "personalizada";
+    const cantidad = $("cantidad-personalizada");
+    $("campo-cantidad-personalizada").hidden = !personalizada;
+    cantidad.disabled = !personalizada;
+    cantidad.required = personalizada;
+    const config = configuracionActual();
+    const max = disponibles(config).length;
+    if (max) cantidad.max = String(max);
+    else cantidad.removeAttribute("max");
+    texto("ayuda-cantidad", max ? `Puedes elegir entre 1 y ${max} preguntas.` : "Selecciona primero el puesto y el tema.");
+    texto("resumen-puesto", PUESTOS[config.puesto] || "Sin seleccionar");
+    texto("resumen-contexto", CONTEXTOS[config.contexto] || "Sin seleccionar");
+    texto("resumen-tema", TEMAS[config.tema] || "Sin seleccionar");
+    texto("resumen-cantidad", config.cantidad || "Por elegir");
+    texto("resumen-duracion", config.cantidad > 0
+      ? `${duracion(config.cantidad * (SEGUNDOS_PENSAR + SEGUNDOS_RESPONDER))} de tiempo guiado`
+      : "Por calcular");
+    mensaje("error-configuracion");
+  }
 
-  $("#formulario-configuracion").addEventListener("submit", evento => {
-    evento.preventDefault();
-
-    const formulario = evento.currentTarget;
-
-    if (!formulario.reportValidity()) return;
-
-    const configuracion = leerConfiguracion();
-
-    const disponibles = preguntasDisponibles(
-      configuracion.puesto,
-      configuracion.tema
-    );
-
-    if (
-      !PUESTOS[configuracion.puesto] ||
-      !CONTEXTOS[configuracion.contexto] ||
-      !TEMAS[configuracion.tema] ||
-      !Number.isInteger(configuracion.cantidad) ||
-      configuracion.cantidad < 1 ||
-      configuracion.cantidad > disponibles.length
-    ) {
-      $("#error-configuracion").textContent =
-        "Revisa la configuración y selecciona una cantidad " +
-        "de preguntas disponible.";
-
-      $("#error-configuracion").hidden = false;
-      return;
+  function mezclar(lista) {
+    const salida = lista.slice();
+    for (let i = salida.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [salida[i], salida[j]] = [salida[j], salida[i]];
     }
+    return salida;
+  }
 
-    configuracionPendiente = configuracion;
-    preguntasPendientes = preguntaElegida &&
-      configuracion.cantidad === 1 &&
-      disponibles.some(item => item.id === preguntaElegida.id)
-      ? [{ ...preguntaElegida }]
-      : null;
-    preguntaElegida = null;
+  function seleccionarPreguntas(config) {
+    const vistas = new Set(datos.sesiones.flatMap((s) => s.respuestas.map((r) => r.preguntaId)));
+    const candidatas = mezclar(disponibles(config))
+      .sort((a, b) => Number(vistas.has(a.id)) - Number(vistas.has(b.id)));
+    const elegidas = [];
+    function incluir(p) {
+      if (p && elegidas.length < config.cantidad && !elegidas.includes(p)) elegidas.push(p);
+    }
+    incluir(candidatas.find((p) => p.id === preguntaElegida));
+    if (config.tema === "mixta") {
+      Object.keys(TIPOS).forEach((tipo) => incluir(candidatas.find((p) => p.tipo === tipo)));
+    } else if (config.tema === "conocimientos") {
+      incluir(candidatas.find((p) => p.tipo === "caso-tecnico"));
+    }
+    candidatas.forEach(incluir);
+    return elegidas;
+  }
 
-    $("#formulario-preparacion").reset();
-    actualizarChecklist();
+  formularioConfig.addEventListener("input", resumenConfiguracion);
+  formularioConfig.addEventListener("change", resumenConfiguracion);
 
-    navegar("preparacion");
-  });
-
-  $$("[data-practicar-tema]").forEach(boton => {
-    boton.addEventListener("click", () => {
+  todos("[data-practicar-tema]").forEach((control) => {
+    control.addEventListener("click", () => {
       preguntaElegida = null;
-      const tema = boton.dataset.practicarTema;
-
-      $(
-        `#formulario-configuracion input[name="tema"][value="${tema}"]`
-      ).checked = true;
-
-      actualizarResumen();
+      formularioConfig.elements.tema.value = control.dataset.practicarTema;
       navegar("configuracion");
     });
   });
 
-  /* --------------------------------------------------------
-     7. CHECKLIST Y CREACIÓN DE SESIÓN
-     -------------------------------------------------------- */
-
   function actualizarChecklist() {
-    const marcados = $$(
-      "#formulario-preparacion input[type='checkbox']:checked"
-    ).length;
-
-    $("#avance-checklist").textContent =
-      `${marcados} de 5 elementos marcados.`;
+    const campos = todos("input[type=checkbox]", $("formulario-preparacion"));
+    texto("avance-checklist", `${campos.filter((c) => c.checked).length} de ${campos.length} elementos marcados.`);
   }
 
-  $("#formulario-preparacion").addEventListener(
-    "change",
-    actualizarChecklist
-  );
-
-  function crearSesion(configuracion, preguntas, autoevaluacion) {
-    return {
-      id: crearId(),
-      estado: "pendiente",
-      creada: new Date().toISOString(),
-      actualizada: new Date().toISOString(),
-      finalizada: null,
-
-      configuracion: { ...configuracion },
-      preguntas: preguntas.map(pregunta => ({ ...pregunta })),
-
-      indice: 0,
-      respuestas: [],
-      borradores: {},
-      checklist: {},
-      autoevaluacionInicial: Number(autoevaluacion),
-      autoevaluacionFinal: null,
-
-      segundosActivos: 0,
-
-      reloj: {
-        indice: 0,
-        fase: "pensar",
-        restante: TIEMPO_PENSAR,
-        limite: null
-      }
-    };
+  function preparar(configuracion, preguntas) {
+    preparada = { configuracion: copiar(configuracion), preguntas: copiar(preguntas) };
+    $("formulario-preparacion").reset();
+    actualizarChecklist();
+    navegar("preparacion");
   }
 
-  $("#formulario-preparacion").addEventListener("submit", evento => {
+  formularioConfig.addEventListener("submit", (evento) => {
     evento.preventDefault();
+    if (!formularioConfig.reportValidity()) return;
+    const config = configuracionActual();
+    const max = disponibles(config).length;
+    if (!max || !Number.isInteger(config.cantidad) || config.cantidad < 1 || config.cantidad > max) {
+      mensaje("error-configuracion", max
+        ? `Elige entre 1 y ${max} preguntas para esta configuración.`
+        : "Selecciona un puesto y un tema con preguntas disponibles.");
+      return;
+    }
+    preparar(config, seleccionarPreguntas(config));
+    preguntaElegida = null;
+  });
 
-    if (!evento.currentTarget.reportValidity()) return;
-    if (!configuracionPendiente) return;
+  $("formulario-preparacion").addEventListener("change", actualizarChecklist);
 
-    const valores = new FormData(evento.currentTarget);
+  function relojNuevo(indice) {
+    return { indice, fase: "pensar", restante: SEGUNDOS_PENSAR, limite: null };
+  }
 
-    const preguntas = preguntasPendientes ||
-      seleccionarPreguntas(configuracionPendiente);
-
-    if (!preguntas.length) {
-      notificar("No hay preguntas para esa configuración.");
+  $("formulario-preparacion").addEventListener("submit", (evento) => {
+    evento.preventDefault();
+    const form = evento.currentTarget;
+    if (!preparada || !form.reportValidity()) return;
+    const { configuracion, preguntas } = preparada;
+    if (!preguntas.length || preguntas.some((p) => !p.texto?.trim())) {
+      notificar("Vuelve a seleccionar el puesto y el tema para generar las preguntas.");
       return;
     }
 
-    const nueva = crearSesion(
-      configuracionPendiente,
-      preguntas,
-      valores.get("autoevaluacionInicial")
-    );
+    const instante = ahora();
+    const sesion = {
+      id: globalThis.crypto?.randomUUID?.() || `practica-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      estado: "pendiente", creada: instante, actualizada: instante, finalizada: null,
+      configuracion, preguntas, indice: 0, respuestas: [], borradores: {},
+      checklist: Object.fromEntries(todos("input[type=checkbox]", form).map((c) => [c.name, c.checked])),
+      autoevaluacionInicial: Number(form.elements.autoevaluacionInicial.value),
+      autoevaluacionFinal: null, segundosActivos: 0, reloj: relojNuevo(0)
+    };
 
-    $$("#formulario-preparacion input[type='checkbox']")
-      .forEach(campo => {
-        nueva.checklist[campo.name] = campo.checked;
-      });
-
-    if (!persistirSesion(nueva)) return;
-
-    sesionActiva = nueva;
-    configuracionPendiente = null;
-    preguntasPendientes = null;
+    // La práctica ya figura en el historial antes de mostrar la primera pregunta.
+    if (!persistir(sesion)) return;
+    activa = sesion;
+    preparada = null;
     navegar("simulacion");
   });
 
-  /* --------------------------------------------------------
-     8. TIEMPO ACTIVO Y TEMPORIZADORES
-     -------------------------------------------------------- */
+  // Simulación, temporizador y borradores
+  function preguntaActual() {
+    return activa.preguntas[activa.indice];
+  }
 
-  function iniciarActividad() {
-    if (!inicioActividad && !document.hidden) {
-      inicioActividad = Date.now();
+  function respuestaDe(sesion, pregunta) {
+    return sesion.respuestas.find((r) => r.preguntaId === pregunta.id);
+  }
+
+  function leerEditor() {
+    const star = Object.fromEntries(Object.keys(STAR).map((c) => [c, $(`star-${c}`).value]));
+    return { texto: $("respuesta-actual").value, star };
+  }
+
+  function respuestasIguales(borrador, respuesta) {
+    return Boolean(borrador && respuesta && borrador.texto.trim() === respuesta.texto.trim() &&
+      Object.keys(STAR).every((c) => (borrador.star?.[c] || "").trim() === (respuesta.star?.[c] || "").trim()));
+  }
+
+  function capturar() {
+    if (!activa || vista !== "simulacion") return;
+    activa.borradores[preguntaActual().id] = leerEditor();
+    activa.actualizada = ahora();
+  }
+
+  function guardarBorrador() {
+    clearTimeout(guardadoId);
+    if (!activa || vista !== "simulacion") return false;
+    capturar();
+    return persistir(activa);
+  }
+
+  function botonesSesion() {
+    const respuesta = respuestaDe(activa, preguntaActual());
+    const editable = activa.reloj.fase !== "pensar";
+    $("comenzar-respuesta").hidden = editable;
+    $("respuesta-actual").disabled = !editable;
+    Object.keys(STAR).forEach((c) => { $(`star-${c}`).disabled = !editable; });
+    $("usar-estructura-star").disabled = !editable;
+    $("guardar-respuesta").disabled = !editable;
+    $("siguiente-pregunta").disabled = !respuestasIguales(leerEditor(), respuesta);
+    texto("siguiente-pregunta", activa.indice === activa.preguntas.length - 1
+      ? "Revisar finalización" : "Siguiente pregunta →");
+    $("finalizar-practica").disabled = activa.respuestas.length !== activa.preguntas.length;
+  }
+
+  const TITULOS_RELOJ = {
+    pensar: "Tiempo para pensar", responder: "Tiempo para responder",
+    agotado: "Tiempo de respuesta cumplido", revision: "Revisión de la respuesta"
+  };
+  const GUIAS_RELOJ = {
+    pensar: "Organiza tus ideas o comienza a responder cuando estés listo.",
+    responder: "Escribe tu respuesta y guárdala para consultar los comentarios.",
+    agotado: "Puedes terminar de escribir y guardar tu respuesta.",
+    revision: "Puedes mejorar tu respuesta o continuar."
+  };
+
+  function pintarReloj() {
+    const { fase, restante } = activa.reloj;
+    const s = Math.max(0, Math.ceil(restante));
+    texto("temporizador", `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`);
+    texto("titulo-tiempo", TITULOS_RELOJ[fase]);
+    texto("instruccion-tiempo", GUIAS_RELOJ[fase]);
+    const aviso = fase === "agotado" ? "Se cumplió el tiempo previsto." :
+      fase === "responder" && s <= 15 ? "Quedan 15 segundos o menos." : "";
+    if ($("aviso-tiempo").textContent !== aviso) texto("aviso-tiempo", aviso);
+  }
+
+  function pulso() {
+    if (!activa || ultimoPulso === null) return;
+    const instante = performance.now();
+    const transcurrido = Math.max(0, (instante - ultimoPulso) / 1000);
+    ultimoPulso = instante;
+    activa.segundosActivos += transcurrido;
+    const r = activa.reloj;
+    if (r.fase === "pensar" || r.fase === "responder") {
+      r.restante -= transcurrido;
+      if (r.fase === "pensar" && r.restante <= 0) {
+        r.fase = "responder";
+        r.restante += SEGUNDOS_RESPONDER;
+        botonesSesion();
+        notificar("Ya puedes escribir tu respuesta.");
+      }
+      if (r.fase === "responder" && r.restante <= 0) {
+        r.fase = "agotado";
+        r.restante = 0;
+      }
     }
-  }
-
-  function pausarActividad() {
-    if (!sesionActiva || !inicioActividad) return;
-
-    sesionActiva.segundosActivos +=
-      (Date.now() - inicioActividad) / 1000;
-
-    inicioActividad = null;
-  }
-
-  function detenerReloj() {
-    clearInterval(intervalo);
-    intervalo = null;
-
-    const reloj = sesionActiva?.reloj;
-
-    if (reloj?.limite) {
-      reloj.restante = Math.max(
-        0,
-        (reloj.limite - Date.now()) / 1000
-      );
-
-      reloj.limite = null;
-    }
-  }
-
-  function habilitarRespuesta(habilitada) {
-    [
-      "#respuesta-actual",
-      "#star-situacion",
-      "#star-tarea",
-      "#star-accion",
-      "#star-resultado",
-      "#usar-estructura-star",
-      "#guardar-respuesta"
-    ].forEach(selector => {
-      $(selector).disabled = !habilitada;
-    });
-  }
-
-  function actualizarRelojInterfaz() {
-    const reloj = sesionActiva.reloj;
-    const pensando = reloj.fase === "pensar";
-
-    $("#titulo-tiempo").textContent = pensando
-      ? "Tiempo para pensar"
-      : "Tiempo de respuesta";
-
-    $("#instruccion-tiempo").textContent = pensando
-      ? "Organiza tus ideas antes de comenzar."
-      : "Desarrolla tu respuesta con ejemplos concretos.";
-
-    $("#temporizador").textContent =
-      formatoReloj(reloj.restante);
-
-    $("#comenzar-respuesta").hidden = !pensando;
-
-    habilitarRespuesta(!pensando);
-
-    if (reloj.fase === "revision") {
-      $("#titulo-tiempo").textContent = "Respuesta guardada";
-      $("#instruccion-tiempo").textContent =
-        "Puedes editarla y volver a guardarla antes de continuar.";
-
-      $("#temporizador").textContent = "Revisión";
-    }
-
-    if (reloj.fase === "agotado") {
-      $("#aviso-tiempo").textContent =
-        "El tiempo recomendado terminó. " +
-        "Puedes completar y guardar tu respuesta.";
-    }
-  }
-
-  function comenzarRespuesta(enfocar = false) {
-    if (sesionActiva?.estado !== "pendiente" ||
-        sesionActiva.reloj.fase !== "pensar") return;
-    detenerReloj();
-
-    sesionActiva.reloj.fase = "responder";
-    sesionActiva.reloj.restante = TIEMPO_RESPONDER;
-
-    $("#aviso-tiempo").textContent = "";
-    avisoMostrado = false;
-
-    actualizarRelojInterfaz();
-    iniciarReloj();
-
-    guardarDatos();
-
-    if (enfocar) $("#respuesta-actual").focus();
+    pintarReloj();
   }
 
   function iniciarReloj() {
-    if (sesionActiva?.estado !== "pendiente" || document.hidden) return;
-
-    const reloj = sesionActiva.reloj;
-
-    if (!["pensar", "responder"].includes(reloj.fase)) {
-      actualizarRelojInterfaz();
-      return;
-    }
-
-    if (intervalo) return;
-
-    reloj.limite = Date.now() + reloj.restante * 1000;
-
-    intervalo = setInterval(() => {
-      reloj.restante = Math.max(
-        0,
-        (reloj.limite - Date.now()) / 1000
-      );
-
-      const lectura = formatoReloj(reloj.restante);
-      if ($("#temporizador").textContent !== lectura) {
-        $("#temporizador").textContent = lectura;
-      }
-
-      if (
-        reloj.fase === "responder" &&
-        reloj.restante <= 30 &&
-        reloj.restante > 0 &&
-        !avisoMostrado
-      ) {
-        avisoMostrado = true;
-
-        $("#aviso-tiempo").textContent =
-          "Quedan 30 segundos o menos del tiempo recomendado.";
-      }
-
-      if (reloj.restante > 0) return;
-
-      if (reloj.fase === "pensar") {
-        comenzarRespuesta(false);
-
-        $("#aviso-tiempo").textContent =
-          "Terminó la preparación. Ya puedes escribir tu respuesta.";
-      } else {
-        detenerReloj();
-
-        reloj.fase = "agotado";
-        reloj.restante = 0;
-
-        actualizarRelojInterfaz();
-        capturarBorrador();
-        guardarDatos();
-      }
-    }, 250);
-
-    actualizarRelojInterfaz();
+    if (relojId !== null || document.hidden || !activa || vista !== "simulacion") return;
+    ultimoPulso = performance.now();
+    relojId = setInterval(pulso, 500);
   }
 
-  $("#comenzar-respuesta").addEventListener("click", () => {
-    comenzarRespuesta(true);
+  function detenerReloj() {
+    if (relojId !== null) pulso();
+    clearInterval(relojId);
+    relojId = null;
+    ultimoPulso = null;
+  }
+
+  function pausarYGuardar() {
+    detenerReloj();
+    return guardarBorrador();
+  }
+
+  function editarBorrador() {
+    if (!activa) return;
+    capturar();
+    texto("contador-palabras", `${palabras($("respuesta-actual").value)} palabras`);
+    mensaje("error-respuesta");
+    $("respuesta-actual").removeAttribute("aria-invalid");
+    botonesSesion();
+    clearTimeout(guardadoId);
+    guardadoId = setTimeout(guardarBorrador, 350);
+  }
+
+  $("formulario-respuesta").addEventListener("input", editarBorrador);
+
+  $("comenzar-respuesta").addEventListener("click", () => {
+    if (!activa || activa.reloj.fase !== "pensar") return;
+    pulso();
+    if (activa.reloj.fase === "pensar") {
+      activa.reloj.fase = "responder";
+      activa.reloj.restante = SEGUNDOS_RESPONDER;
+    }
+    pintarReloj();
+    botonesSesion();
+    guardarBorrador();
+    $("respuesta-actual").focus();
   });
 
-  /* --------------------------------------------------------
-     9. SIMULACIÓN Y BORRADORES
-     -------------------------------------------------------- */
+  $("usar-estructura-star").addEventListener("click", () => {
+    const apartados = Object.entries(STAR)
+      .filter(([c]) => $(`star-${c}`).value.trim())
+      .map(([c, nombre]) => `${nombre}: ${$(`star-${c}`).value.trim()}`);
+    if (!apartados.length) return notificar("Completa al menos un apartado STAR.");
+    const propuesta = apartados.join("\n\n");
+    if (propuesta.length > $("respuesta-actual").maxLength) {
+      return notificar("Reduce los apartados para que la respuesta completa tenga como máximo 4000 caracteres.");
+    }
+    $("respuesta-actual").value = propuesta;
+    editarBorrador();
+    $("respuesta-actual").focus();
+  });
 
-  function renderExperiencias() {
-    const campos = [
-      ["Estudios", datos.perfil.estudios],
-      ["Proyectos", datos.perfil.proyectos],
-      ["Experiencias", datos.perfil.experiencias]
-    ].filter(([, texto]) => texto.trim());
-
-    $("#experiencias-sesion").innerHTML = campos.length
-      ? campos.map(([titulo, texto]) => `
-          <h3>${escapar(titulo)}</h3>
-          <p style="white-space: pre-wrap">${escapar(texto)}</p>
-        `).join("")
-      : "<p>Todavía no has registrado experiencias.</p>";
+  function pintarIndicadores(panel, entradas) {
+    panel.replaceChildren();
+    for (const { clave, valor } of entradas) {
+      const fila = elemento("div", "", "indicador");
+      fila.append(elemento("p", `${CRITERIOS[clave] || clave}: ${valor}/100`, "indicador__nombre"));
+      const barra = elemento("div", "", "indicador__barra");
+      barra.setAttribute("aria-hidden", "true");
+      const relleno = elemento("div", "", "indicador__relleno");
+      relleno.style.width = `${Math.min(100, Math.max(0, Number(valor) || 0))}%`;
+      barra.append(relleno);
+      fila.append(barra);
+      panel.append(fila);
+    }
   }
 
-  function capturarBorrador() {
-    if (
-      !sesionActiva ||
-      vistaActual !== "simulacion" ||
-      sesionActiva.estado !== "pendiente"
-    ) {
+  function mostrarAnalisis(analisis) {
+    const panel = $("analisis-respuesta");
+    panel.replaceChildren();
+    texto("estado-analisis", analisis ? "Revisada" : "Sin revisar");
+    if (!analisis) {
+      panel.append(elemento("p", "Guarda una respuesta para consultar los comentarios.", "estado-vacio"));
       return;
     }
-
-    const pregunta = sesionActiva.preguntas[sesionActiva.indice];
-
-    sesionActiva.borradores[pregunta.id] = {
-      texto: $("#respuesta-actual").value,
-      star: {
-        situacion: $("#star-situacion").value,
-        tarea: $("#star-tarea").value,
-        accion: $("#star-accion").value,
-        resultado: $("#star-resultado").value
-      }
-    };
-
-    sesionActiva.actualizada = new Date().toISOString();
-  }
-
-  function respuestaModificada() {
-    if (!sesionActiva) return false;
-
-    const guardada = respuestaGuardada(
-      sesionActiva,
-      sesionActiva.indice
-    );
-
-    const borrador = borradorActual();
-
-    if (!guardada) {
-      return Boolean(
-        borrador.texto.trim() ||
-        Object.values(borrador.star).some(texto => texto.trim())
-      );
+    pintarIndicadores(panel, analisis.indicadores);
+    for (const linea of [...analisis.fortalezas, ...analisis.mejoras, ...analisis.recomendaciones]) {
+      panel.append(elemento("p", linea));
     }
-
-    return (
-      borrador.texto.trim() !== guardada.texto ||
-      Object.keys(borrador.star).some(
-        clave => borrador.star[clave].trim() !== guardada.star[clave]
-      )
-    );
-  }
-
-  function actualizarBotonesSesion() {
-    if (!sesionActiva) return;
-
-    const guardada = respuestaGuardada(
-      sesionActiva,
-      sesionActiva.indice
-    );
-
-    const ultima =
-      sesionActiva.indice === sesionActiva.preguntas.length - 1;
-
-    $("#siguiente-pregunta").disabled =
-      !guardada || respuestaModificada();
-
-    $("#siguiente-pregunta").textContent = ultima
-      ? "Revisar finalización"
-      : "Siguiente pregunta →";
-
-    $("#finalizar-practica").disabled =
-      sesionActiva.respuestas.length !==
-        sesionActiva.preguntas.length ||
-      respuestaModificada();
-  }
-
-  function renderSimulacion() {
-    if (!sesionActiva) return;
-
-    const sesion = sesionActiva;
-    const configuracion = sesion.configuracion;
-    const pregunta = sesion.preguntas[sesion.indice];
-
-    $("#sesion-puesto").textContent = PUESTOS[configuracion.puesto];
-    $("#sesion-contexto").textContent = CONTEXTOS[configuracion.contexto];
-    $("#sesion-tema").textContent = TEMAS[configuracion.tema];
-    $("#sesion-cantidad").textContent = sesion.preguntas.length;
-    $("#sesion-autoevaluacion").textContent =
-      NIVELES[sesion.autoevaluacionInicial] || "Sin registrar";
-
-    $("#simulacion-descripcion").textContent =
-      `${PUESTOS[configuracion.puesto]} · ` +
-      `${CONTEXTOS[configuracion.contexto]}`;
-
-    $("#contador-preguntas").textContent =
-      `Pregunta ${sesion.indice + 1} de ${sesion.preguntas.length}`;
-
-    $("#pregunta-numero").textContent =
-      `Pregunta ${sesion.indice + 1}`;
-
-    $("#pregunta-categoria").textContent = TIPOS[pregunta.tipo];
-    $("#pregunta-actual").textContent = pregunta.texto;
-
-    $("#pregunta-instruccion").textContent =
-      ["personal", "situacional"].includes(pregunta.tipo)
-        ? "Explica el contexto, tu responsabilidad, tus acciones y el resultado."
-        : "Explica tu razonamiento, los pasos y cómo comprobarías tu propuesta.";
-
-    $("#caso-tecnico").hidden = !pregunta.datos;
-    $("#contenido-caso-tecnico").textContent = pregunta.datos || "";
-
-    const borrador = borradorActual();
-
-    $("#respuesta-actual").value = borrador.texto;
-
-    for (const clave of ["situacion", "tarea", "accion", "resultado"]) {
-      $(`#star-${clave}`).value = borrador.star[clave];
-    }
-
-    $("#contador-palabras").textContent =
-      `${contarPalabras(borrador.texto)} palabras`;
-
-    $("#error-respuesta").hidden = true;
-    $("#respuesta-actual").removeAttribute("aria-invalid");
-
-    $("#aviso-tiempo").textContent = "";
-
-    actualizarRelojInterfaz();
-    renderExperiencias();
-    renderAvance();
-
-    const respuesta = respuestaGuardada(sesion, sesion.indice);
-
-    renderAnalisis(respuesta?.analisis || null);
-    actualizarBotonesSesion();
   }
 
   function renderAvance() {
-    const sesion = sesionActiva;
-    const respondidas = sesion.respuestas.length;
-    const total = sesion.preguntas.length;
-
-    $("#progreso-sesion").max = total;
-    $("#progreso-sesion").value = respondidas;
-
-    $("#progreso-sesion").textContent =
-      `${respondidas} de ${total}`;
-
-    $("#estado-avance").textContent =
-      `${respondidas} respondidas · ${total - respondidas} pendientes`;
-
-    $("#lista-respuestas-sesion").innerHTML =
-      sesion.preguntas.map((pregunta, indice) => {
-        const respondida = respuestaGuardada(sesion, indice);
-
-        return `
-          <li>
-            ${
-              respondida
-                ? `
-                  <button
-                    class="boton boton--texto"
-                    type="button"
-                    data-repetir-pregunta="${indice}"
-                  >
-                    Pregunta ${indice + 1}: repetir
-                  </button>
-                  <span class="etiqueta etiqueta--positiva">
-                    Respondida
-                  </span>
-                `
-                : `
-                  <span>Pregunta ${indice + 1}</span>
-                  <span class="etiqueta">Pendiente</span>
-                `
-            }
-          </li>
-        `;
-      }).join("");
+    const total = activa.preguntas.length;
+    const hechas = activa.respuestas.length;
+    texto("contador-preguntas", `Pregunta ${activa.indice + 1} de ${total}`);
+    $("progreso-sesion").max = total;
+    $("progreso-sesion").value = hechas;
+    texto("estado-avance", `${hechas} respondidas · ${total - hechas} pendientes`);
+    const lista = $("lista-respuestas-sesion");
+    lista.replaceChildren();
+    activa.preguntas.forEach((p, indice) => {
+      const respondida = Boolean(respuestaDe(activa, p));
+      const fila = elemento("li", `Pregunta ${indice + 1} · ${respondida ? "Respondida" : "Pendiente"} `);
+      if (respondida) fila.append(boton("Volver a intentar", () => cambiarPregunta(indice, true), "boton boton--texto"));
+      lista.append(fila);
+    });
   }
 
-  function actualizarBorrador() {
-    capturarBorrador();
+  function renderSimulacion() {
+    const p = preguntaActual();
+    const c = activa.configuracion;
+    const respuesta = respuestaDe(activa, p);
+    const borrador = activa.borradores[p.id] || respuesta;
+    texto("sesion-puesto", PUESTOS[c.puesto]);
+    texto("sesion-contexto", CONTEXTOS[c.contexto]);
+    texto("sesion-tema", TEMAS[c.tema]);
+    texto("sesion-autoevaluacion", NIVELES[activa.autoevaluacionInicial] || "Sin registrar");
+    texto("sesion-cantidad", activa.preguntas.length);
+    texto("simulacion-descripcion", `${PUESTOS[c.puesto]} · ${TEMAS[c.tema]}`);
 
-    $("#contador-palabras").textContent =
-      `${contarPalabras($("#respuesta-actual").value)} palabras`;
+    // Se usa el texto de la pregunta guardada en esta sesión, incluida la primera.
+    texto("pregunta-actual", p.texto);
+    texto("pregunta-categoria", TIPOS[p.tipo]);
+    texto("pregunta-numero", `Pregunta ${activa.indice + 1}`);
+    texto("pregunta-instruccion", p.tipo === "caso-tecnico"
+      ? "Utiliza los datos del ejercicio y explica cómo comprobarías tu solución."
+      : p.tipo === "conocimiento" ? "Explica el concepto y da un ejemplo." : "Apoya tu respuesta con un ejemplo concreto.");
+    $("caso-tecnico").hidden = !p.datos;
+    texto("contenido-caso-tecnico", p.datos || "");
+    $("respuesta-actual").value = borrador?.texto || "";
+    Object.keys(STAR).forEach((c) => { $(`star-${c}`).value = borrador?.star?.[c] || ""; });
+    texto("contador-palabras", `${palabras($("respuesta-actual").value)} palabras`);
+    mensaje("error-respuesta");
+    $("respuesta-actual").removeAttribute("aria-invalid");
 
-    actualizarBotonesSesion();
-
-
-  }
-
-  [
-    "#respuesta-actual",
-    "#star-situacion",
-    "#star-tarea",
-    "#star-accion",
-    "#star-resultado"
-  ].forEach(selector => {
-    $(selector).addEventListener("input", actualizarBorrador);
-  });
-
-  $("#usar-estructura-star").addEventListener("click", () => {
-    const apartados = [
-      ["Situación", $("#star-situacion").value.trim()],
-      ["Tarea", $("#star-tarea").value.trim()],
-      ["Acción", $("#star-accion").value.trim()],
-      ["Resultado", $("#star-resultado").value.trim()]
-    ];
-
-    const texto = apartados
-      .filter(([, contenido]) => contenido)
-      .map(([titulo, contenido]) => `${titulo}: ${contenido}`)
-      .join("\n\n");
-
-    if (!texto) {
-      notificar("Completa al menos un apartado STAR.");
-      return;
-    }
-
-    if (
-      $("#respuesta-actual").value.trim() &&
-      !window.confirm(
-        "Esta acción reemplazará el texto actual por los apartados STAR. " +
-        "¿Deseas continuar?"
-      )
-    ) {
-      return;
-    }
-
-    if (texto.length > $("#respuesta-actual").maxLength) {
-      notificar("Los apartados superan el límite de la respuesta. Reduce el texto antes de copiarlos.");
-      return;
-    }
-    $("#respuesta-actual").value = texto;
-    actualizarBorrador();
-    $("#respuesta-actual").focus();
-  });
-
-  /* --------------------------------------------------------
-     10. REVISIÓN ORIENTATIVA
-     -------------------------------------------------------- */
-
-  function analizarRespuesta(pregunta, borrador) {
-    const texto = borrador.texto.trim();
-    const normalizado = normalizar(texto);
-    const palabras = contarPalabras(texto);
-
-    const senales = [
-      {
-        nombre: "contexto",
-        encontrado:
-          /\b(situacion|contexto|proyecto|curso|equipo|problema|caso)\b/
-            .test(normalizado)
-      },
-      {
-        nombre: "objetivo o responsabilidad",
-        encontrado:
-          /\b(tarea|objetivo|responsabilidad|debia|necesitaba|requisito|buscaba)\b/
-            .test(normalizado)
-      },
-      {
-        nombre: "acción o procedimiento",
-        encontrado:
-          /\b(accion|hice|realice|implemente|analice|revise|verifique|probaria|revisaria|primero|paso)\b/
-            .test(normalizado)
-      },
-      {
-        nombre: "resultado o comprobación",
-        encontrado:
-          /\b(resultado|logre|logramos|consegui|aprendi|conclusion|comprobar|validar|prueba|verificar)\b/
-            .test(normalizado)
+    const experiencias = $("experiencias-sesion");
+    experiencias.replaceChildren();
+    for (const campo of ["estudios", "proyectos", "experiencias"]) {
+      if (datos.perfil[campo]) {
+        experiencias.append(elemento("h3", campo[0].toUpperCase() + campo.slice(1)), elemento("p", datos.perfil[campo]));
       }
-    ];
-
-    const organizacion =
-      senales.filter(senal => senal.encontrado).length * 25;
-
-    const esSTAR = ["personal", "situacional"].includes(pregunta.tipo);
-
-    const contenidosSTAR = Object.values(borrador.star).map(
-      valor => normalizar(valor.trim()).replace(/\s+/g, " ")
-    );
-    const apartados = Object.entries(borrador.star).map(
-      ([clave, contenido]) => ({
-        clave,
-        completo: contarPalabras(contenido) >= 3 &&
-          contenidosSTAR.filter(valor =>
-            valor === normalizar(contenido.trim()).replace(/\s+/g, " ")
-          ).length === 1
-      })
-    );
-
-    const indicadores = [
-      { clave: "organizacion", valor: organizacion }
-    ];
-
-    if (esSTAR) {
-      indicadores.push({
-        clave: "star",
-        valor: apartados.filter(item => item.completo).length * 25
-      });
     }
+    if (!experiencias.childElementCount) experiencias.append(elemento("p", "Todavía no has registrado experiencias."));
+    renderAvance();
+    mostrarAnalisis(respuesta?.analisis);
+    pintarReloj();
+    botonesSesion();
+  }
 
+  function cambiarPregunta(indice, repetir = false) {
+    if (!activa?.preguntas[indice]) return;
+    detenerReloj();
+    if (!guardarBorrador()) { iniciarReloj(); return; }
+    const siguiente = copiar(activa);
+    siguiente.indice = indice;
+    siguiente.reloj = relojNuevo(indice);
+    if (repetir) {
+      siguiente.reloj.fase = "responder";
+      siguiente.reloj.restante = SEGUNDOS_RESPONDER;
+    } else if (respuestaDe(siguiente, siguiente.preguntas[indice])) {
+      siguiente.reloj.fase = "revision";
+    }
+    if (!persistir(siguiente)) { iniciarReloj(); return; }
+    activa = siguiente;
+    renderSimulacion();
+    iniciarReloj();
+    $("pregunta-actual").focus();
+  }
+
+  // Retroalimentación local: los indicadores miden señales de estructura.
+  function analizar(pregunta, borrador) {
+    const contenido = normalizar(borrador.texto);
+    const senales = [
+      ["contexto", /\b(situacion|contexto|proyecto|curso|equipo|problema|caso)\b/],
+      ["objetivo", /\b(tarea|objetivo|responsabilidad|debia|necesitaba|requisito|buscaba)\b/],
+      ["acción", /\b(accion|hice|realice|implemente|analice|revise|verifique|probaria|revisaria|primero|paso)\b/],
+      ["resultado", /\b(resultado|logre|logramos|consegui|aprendi|conclusion|comprobar|validar|prueba|verificar)\b/]
+    ];
+    const presentes = senales.filter(([, patron]) => patron.test(contenido)).map(([nombre]) => nombre);
+    const faltantes = senales.map(([nombre]) => nombre).filter((nombre) => !presentes.includes(nombre));
+    const indicadores = [{ clave: "organizacion", valor: presentes.length * 25 }];
     const fortalezas = [];
     const mejoras = [];
     const recomendaciones = [];
+    const apartados = [];
 
-    const detectadas = senales
-      .filter(senal => senal.encontrado)
-      .map(senal => senal.nombre);
+    if (presentes.length) fortalezas.push(`Se detectaron señales de ${presentes.join(", ")}.`);
+    if (faltantes.length) mejoras.push(`Revisa si explicaste con claridad estos elementos: ${faltantes.join(", ")}.`);
 
-    const faltantes = senales
-      .filter(senal => !senal.encontrado)
-      .map(senal => senal.nombre);
-
-    if (detectadas.length) {
-      fortalezas.push(
-        `Se encontraron señales escritas de: ${detectadas.join(", ")}.`
-      );
-    }
-
-    if (faltantes.length) {
-      mejoras.push(
-        `No se detectaron señales explícitas de: ${faltantes.join(", ")}. ` +
-        "Revisa si esos elementos están suficientemente explicados."
-      );
-    }
-
-    if (esSTAR) {
-      const incompletos = apartados
-        .filter(item => !item.completo)
-        .map(item => item.clave);
-
-      if (incompletos.length) {
-        recomendaciones.push(
-          `Completa o amplía los campos STAR: ${incompletos.join(", ")}.`
-        );
-      } else {
-        fortalezas.push(
-          "Los cuatro campos STAR tienen textos distintos de al menos tres palabras."
-        );
+    if (["personal", "situacional"].includes(pregunta.tipo)) {
+      const limpiar = (v) => normalizar(v.trim()).replace(/\s+/g, " ");
+      const valores = Object.values(borrador.star).map(limpiar);
+      for (const [clave, valor] of Object.entries(borrador.star)) {
+        const contenidoCampo = limpiar(valor);
+        const distinto = valores.filter((v) => v === contenidoCampo).length === 1;
+        apartados.push({ clave, completo: palabras(valor) >= 3 && distinto });
       }
-
-      recomendaciones.push(
-        "Revisa que se entienda tu aporte individual y el resultado del ejemplo."
-      );
+      indicadores.push({ clave: "star", valor: apartados.filter((a) => a.completo).length * 25 });
+      const pendientes = apartados.filter((a) => !a.completo).map((a) => STAR[a.clave]);
+      if (pendientes.length) recomendaciones.push(`Puedes desarrollar estos campos STAR: ${pendientes.join(", ")}.`);
+      else fortalezas.push("Completaste los cuatro campos STAR con textos diferentes.");
+      recomendaciones.push("Comprueba que se entienda qué hiciste tú y qué cambió después.");
     } else {
-      recomendaciones.push(
-        "Contrasta la exactitud técnica con materiales del curso o una referencia especializada."
-      );
-
-      recomendaciones.push(
-        "Explica los pasos de tu propuesta y cómo comprobarías que funciona."
-      );
+      recomendaciones.push("Describe los pasos de tu propuesta y cómo comprobarías el resultado.");
+      recomendaciones.push("Contrasta la exactitud técnica con tus materiales de estudio.");
     }
-
-    if (palabras >= 80) {
-      recomendaciones.push(
-        "Comprueba que cada frase aporte información: una respuesta más larga no es necesariamente mejor."
-      );
-    }
-
-    const puntuacion = Math.round(
-      indicadores.reduce((suma, indicador) => suma + indicador.valor, 0) /
-      indicadores.length
-    );
-
     return {
-      versionReglas: 2,
-      puntuacion,
-      indicadores,
-      fortalezas,
-      mejoras,
-      recomendaciones,
-      apartados: esSTAR ? apartados : []
+      versionReglas: 2, puntuacion: promedio(indicadores.map((i) => i.valor)),
+      indicadores, fortalezas, mejoras, recomendaciones, apartados
     };
   }
 
-  function indicadorHTML(clave, valor, detalle = "") {
-    return `
-      <div class="indicador">
-        <div class="indicador__cabecera">
-          <span class="indicador__nombre">
-            ${escapar(CRITERIOS[clave].nombre)}
-          </span>
-          <span class="indicador__valor">${valor}/100</span>
-        </div>
-
-        <div class="indicador__barra" aria-hidden="true">
-          <span
-            class="indicador__relleno"
-            style="--porcentaje: ${valor}%"
-          ></span>
-        </div>
-
-        ${
-          detalle
-            ? `<p class="indicador__detalle">${escapar(detalle)}</p>`
-            : ""
-        }
-      </div>
-    `;
-  }
-
-  function criteriosHTML(claves) {
-    return unicos(claves).map(clave => `
-      <p>
-        <strong>${escapar(CRITERIOS[clave].nombre)}:</strong>
-        ${escapar(CRITERIOS[clave].descripcion)}
-      </p>
-    `).join("");
-  }
-
-  function renderAnalisis(analisis) {
-    $("#estado-analisis").textContent =
-      analisis ? "Revisada" : "Sin revisar";
-
-    if (!analisis) {
-      $("#analisis-respuesta").innerHTML = `
-        <p class="estado-vacio">
-          Guarda una respuesta para consultar los comentarios
-          y criterios de revisión.
-        </p>
-      `;
-
-      $("#criterios-analisis").innerHTML =
-        "<p>La revisión utiliza reglas explícitas sobre el texto " +
-        "y los campos STAR. No verifica la exactitud técnica.</p>";
-
-      return;
-    }
-
-    $("#analisis-respuesta").innerHTML = `
-      <p>
-        <strong>${analisis.puntuacion}/100</strong>
-        · Índice orientativo de las reglas aplicadas
-      </p>
-
-      ${analisis.indicadores.map(
-        indicador => indicadorHTML(indicador.clave, indicador.valor)
-      ).join("")}
-
-      <section class="tarjeta tarjeta--positiva">
-        <h3>Aspectos identificados</h3>
-        <ul>${listaHTML(analisis.fortalezas)}</ul>
-      </section>
-
-      <section class="tarjeta tarjeta--advertencia">
-        <h3>Aspectos para revisar</h3>
-        <ul>${
-          listaHTML(analisis.mejoras.length
-            ? analisis.mejoras
-            : ["Revisa manualmente la claridad y pertinencia del contenido."])
-        }</ul>
-      </section>
-
-      <section>
-        <h3>Recomendaciones</h3>
-        <ul>${listaHTML(analisis.recomendaciones)}</ul>
-      </section>
-    `;
-
-    $("#criterios-analisis").innerHTML = criteriosHTML(
-      analisis.indicadores.map(item => item.clave)
-    );
-  }
-
-  /* --------------------------------------------------------
-     11. GUARDAR, REPETIR Y AVANZAR RESPUESTAS
-     -------------------------------------------------------- */
-
-  function guardarRespuesta() {
-    if (sesionActiva?.estado !== "pendiente" ||
-        sesionActiva.reloj.fase === "pensar") return false;
-
-    capturarBorrador();
-
-    const borrador = borradorActual();
-    const texto = borrador.texto.trim();
-
-    if (!texto) {
-      $("#error-respuesta").textContent =
-        "Escribe una respuesta antes de guardarla.";
-
-      $("#error-respuesta").hidden = false;
-      $("#respuesta-actual").setAttribute("aria-invalid", "true");
-      $("#respuesta-actual").focus();
-
-      return false;
-    }
-
-    $("#error-respuesta").hidden = true;
-    $("#respuesta-actual").removeAttribute("aria-invalid");
-
-    const pregunta = sesionActiva.preguntas[sesionActiva.indice];
-    const anterior = respuestaGuardada(
-      sesionActiva,
-      sesionActiva.indice
-    );
-
-    const star = Object.fromEntries(
-      Object.entries(borrador.star).map(
-        ([clave, valor]) => [clave, valor.trim()]
-      )
-    );
-
-    const respuesta = {
-      preguntaId: pregunta.id,
-      texto,
-      star,
-      fecha: new Date().toISOString(),
-      analisis: analizarRespuesta(pregunta, { texto, star }),
-      intentos: anterior ? [...anterior.intentos] : []
-    };
-
-    const cambioReal = !anterior || anterior.texto !== texto ||
-      Object.keys(star).some(clave => anterior.star[clave] !== star[clave]);
-
-    if (anterior && cambioReal) {
-      respuesta.intentos.push({
-        texto: anterior.texto,
-        star: { ...anterior.star },
-        fecha: anterior.fecha,
-        analisis: anterior.analisis
-      });
-    }
-
-    const indice = sesionActiva.respuestas.findIndex(
-      item => item.preguntaId === pregunta.id
-    );
-
-    const respuestas = [...sesionActiva.respuestas];
-    if (indice === -1) respuestas.push(respuesta);
-    else if (cambioReal) respuestas[indice] = respuesta;
-
-    const nueva = {
-      ...sesionActiva,
-      respuestas,
-      borradores: { ...sesionActiva.borradores, [pregunta.id]: { texto, star } },
-      reloj: { ...sesionActiva.reloj, fase: "revision", limite: null },
-      actualizada: new Date().toISOString()
-    };
-
-    if (!persistirSesion(nueva)) return false;
-
-    clearInterval(intervalo);
-    intervalo = null;
-    actualizarRelojInterfaz();
-    renderAnalisis(respuestas[indice === -1 ? respuestas.length - 1 : indice].analisis);
-    renderAvance();
-    actualizarBotonesSesion();
-    notificar("Respuesta guardada. Puedes revisar los comentarios.");
-
-    return true;
-  }
-
-  $("#formulario-respuesta").addEventListener("submit", evento => {
+  $("formulario-respuesta").addEventListener("submit", (evento) => {
     evento.preventDefault();
-    guardarRespuesta();
-  });
+    if (!activa || activa.reloj.fase === "pensar") return;
+    clearTimeout(guardadoId);
+    pulso();
+    const borrador = leerEditor();
+    borrador.texto = borrador.texto.trim();
+    for (const c of Object.keys(STAR)) borrador.star[c] = borrador.star[c].trim();
 
-  function cambiarPregunta(indice, repetir = false) {
-    if (sesionActiva?.estado !== "pendiente" ||
-        !Number.isInteger(indice) || !sesionActiva.preguntas[indice]) return;
-    capturarBorrador();
-
-    if (
-      respuestaModificada() &&
-      !window.confirm(
-        "Tu texto se conservará como borrador, pero aún no está " +
-        "registrado como respuesta. ¿Deseas cambiar de pregunta?"
-      )
-    ) {
+    if (!borrador.texto) {
+      mensaje("error-respuesta", "Escribe una respuesta antes de guardarla.");
+      $("respuesta-actual").setAttribute("aria-invalid", "true");
+      $("respuesta-actual").focus();
       return;
     }
 
-    detenerReloj();
-
-    sesionActiva.indice = indice;
-
-    const guardada = respuestaGuardada(sesionActiva, indice);
-
-    sesionActiva.reloj = {
-      indice,
-      fase: repetir || !guardada ? "pensar" : "revision",
-      restante: TIEMPO_PENSAR,
-      limite: null
-    };
-
-    avisoMostrado = false;
-
+    const s = copiar(activa);
+    const p = s.preguntas[s.indice];
+    const previa = respuestaDe(s, p);
+    if (!respuestasIguales(borrador, previa)) {
+      const intentos = [...(previa?.intentos || [])];
+      if (previa) {
+        const { texto, star, fecha, analisis } = previa;
+        intentos.push({ texto, star, fecha, analisis });
+      }
+      const nueva = { preguntaId: p.id, ...borrador, fecha: ahora(), analisis: analizar(p, borrador), intentos };
+      s.respuestas = s.respuestas.filter((r) => r.preguntaId !== p.id);
+      s.respuestas.push(nueva);
+    }
+    s.borradores[p.id] = borrador;
+    s.actualizada = ahora();
+    s.reloj.fase = "revision";
+    if (!persistir(s)) return;
+    activa = s;
     renderSimulacion();
-    iniciarReloj();
-    guardarDatos();
-
-    $("#pregunta-actual").focus();
-
-    if (repetir) {
-      notificar(
-        "Puedes mejorar la respuesta anterior. " +
-        "El intento previo se conservará cuando guardes el nuevo."
-      );
-    }
-  }
-
-  $("#lista-respuestas-sesion").addEventListener("click", evento => {
-    const boton = evento.target.closest("[data-repetir-pregunta]");
-
-    if (!boton) return;
-
-    cambiarPregunta(Number(boton.dataset.repetirPregunta), true);
+    notificar("Respuesta guardada. Ya puedes revisar los comentarios.");
   });
 
-  $("#siguiente-pregunta").addEventListener("click", () => {
-    if (sesionActiva?.estado !== "pendiente") return;
-
-    capturarBorrador();
-
-    if (
-      !respuestaGuardada(sesionActiva, sesionActiva.indice) ||
-      respuestaModificada()
-    ) {
-      notificar("Guarda tu respuesta actual antes de continuar.");
+  function pedirFinalizacion() {
+    if (!activa) return;
+    capturar();
+    const pendiente = activa.preguntas.findIndex((p) => {
+      const r = respuestaDe(activa, p);
+      return !r || !respuestasIguales(activa.borradores[p.id] || r, r);
+    });
+    if (pendiente >= 0) {
+      cambiarPregunta(pendiente, Boolean(respuestaDe(activa, activa.preguntas[pendiente])));
+      notificar(`Guarda la respuesta de la pregunta ${pendiente + 1} antes de finalizar.`);
       return;
     }
-
-    if (sesionActiva.indice < sesionActiva.preguntas.length - 1) {
-      cambiarPregunta(sesionActiva.indice + 1);
-    } else {
-      solicitarFinalizacion();
-    }
-  });
-
-  /* --------------------------------------------------------
-     12. GUARDAR Y CONTINUAR PRÁCTICAS
-     -------------------------------------------------------- */
-
-  function guardarPendiente() {
-    if (sesionActiva?.estado !== "pendiente") return;
-
-    if (navegar("historial")) {
-      notificar("Práctica pendiente guardada. Puedes continuarla después.");
-    }
+    texto("resumen-finalizacion", `${activa.respuestas.length} respuestas guardadas.`);
+    $("dialogo-finalizar").returnValue = "";
+    $("dialogo-finalizar").showModal();
   }
 
-  $("#guardar-pendiente").addEventListener("click", guardarPendiente);
-  $("#guardar-salir").addEventListener("click", guardarPendiente);
+  $("siguiente-pregunta").addEventListener("click", () => {
+    if (!activa || !respuestasIguales(leerEditor(), respuestaDe(activa, preguntaActual()))) return;
+    if (activa.indice + 1 < activa.preguntas.length) cambiarPregunta(activa.indice + 1);
+    else pedirFinalizacion();
+  });
 
-  function continuarSesion(id) {
-    const sesion = buscarSesion(id);
+  $("finalizar-practica").addEventListener("click", pedirFinalizacion);
 
-    if (!sesion || sesion.estado !== "pendiente") return;
+  $("dialogo-finalizar").addEventListener("close", () => {
+    if ($("dialogo-finalizar").returnValue !== "confirmar" || !activa || vista !== "simulacion") return;
+    detenerReloj();
+    clearTimeout(guardadoId);
+    const instante = ahora();
+    const finalizada = { ...activa, estado: "finalizada", actualizada: instante, finalizada: instante };
+    if (!persistir(finalizada)) { iniciarReloj(); return; }
+    resultadoId = activa.id;
+    activa = null;
+    navegar("resultados");
+    notificar("Práctica finalizada y guardada en Mis prácticas.");
+  });
 
-    if (
-      vistaActual === "simulacion" &&
-      sesionActiva &&
-      sesionActiva.id !== id
-    ) {
-      capturarBorrador();
-      detenerReloj();
-      pausarActividad();
-      guardarDatos();
-    }
+  for (const id of ["guardar-pendiente", "guardar-salir"]) {
+    $(id).addEventListener("click", () => {
+      if (navegar("historial")) notificar("Práctica pendiente guardada.");
+    });
+  }
 
-    const pendiente = sesion.preguntas.findIndex(
-      (_, indice) => !respuestaGuardada(sesion, indice)
-    );
-
-    if (pendiente !== -1 && respuestaGuardada(sesion, sesion.indice)) {
-      sesion.indice = pendiente;
-      sesion.reloj = {
-        indice: pendiente, fase: "pensar", restante: TIEMPO_PENSAR, limite: null
-      };
-    }
-
-    sesionActiva = sesion;
-    avisoMostrado = false;
-
+  function continuar(s) {
+    if (!s || s.estado !== "pendiente") return;
+    activa = copiar(s);
     navegar("simulacion");
   }
 
-  $("#continuar-pendiente-inicio").addEventListener("click", () => {
-    const pendiente = [...datos.sesiones]
-      .filter(sesion => sesion.estado === "pendiente")
-      .sort((a, b) => b.actualizada.localeCompare(a.actualizada))[0];
-
-    if (pendiente) continuarSesion(pendiente.id);
-  });
-
-  /* --------------------------------------------------------
-     13. FINALIZACIÓN
-     -------------------------------------------------------- */
-
-  function solicitarFinalizacion() {
-    if (sesionActiva?.estado !== "pendiente") return;
-
-    capturarBorrador();
-
-    if (
-      sesionActiva.respuestas.length !==
-      sesionActiva.preguntas.length
-    ) {
-      notificar("Responde y guarda todas las preguntas antes de finalizar.");
-      return;
-    }
-
-    const cambiosPendientes = sesionActiva.preguntas.some((pregunta, indice) => {
-      const borrador = sesionActiva.borradores[pregunta.id];
-      const guardada = respuestaGuardada(sesionActiva, indice);
-      return borrador && guardada && (borrador.texto.trim() !== guardada.texto ||
-        Object.keys(guardada.star).some(clave =>
-          borrador.star[clave].trim() !== guardada.star[clave]));
-    });
-    if (cambiosPendientes) {
-      notificar("Revisa y guarda los borradores pendientes antes de finalizar.");
-      return;
-    }
-
-    $("#resumen-finalizacion").textContent =
-      `${sesionActiva.respuestas.length} respuestas guardadas.`;
-
-    $("#dialogo-finalizar").returnValue = "";
-    $("#dialogo-finalizar").showModal();
+  function repetir(s) {
+    if (s) preparar(s.configuracion, s.preguntas);
   }
 
-  $("#finalizar-practica").addEventListener(
-    "click",
-    solicitarFinalizacion
-  );
-
-  $("#dialogo-finalizar").addEventListener("close", () => {
-    if ($("#dialogo-finalizar").returnValue !== "confirmar") return;
-    if (sesionActiva?.estado !== "pendiente" ||
-        vistaActual !== "simulacion") return;
-
-    detenerReloj();
-    pausarActividad();
-    const fecha = new Date().toISOString();
-    const finalizada = {
-      ...sesionActiva, estado: "finalizada", finalizada: fecha, actualizada: fecha
-    };
-
-    if (!persistirSesion(finalizada)) {
-      iniciarActividad();
-      iniciarReloj();
-      return;
-    }
-
-    resultadoActivo = finalizada.id;
-    sesionActiva = null;
+  function verResultado(s) {
+    resultadoId = s.id;
     navegar("resultados");
-    notificar("Práctica finalizada y guardada.");
+  }
+
+  function indiceSesion(s) {
+    return promedio(s.respuestas.map((r) => r.analisis.puntuacion));
+  }
+
+  function indicadoresSesion(s) {
+    const grupos = new Map();
+    for (const r of s.respuestas) {
+      for (const indicador of r.analisis.indicadores) {
+        if (!grupos.has(indicador.clave)) grupos.set(indicador.clave, []);
+        grupos.get(indicador.clave).push(indicador.valor);
+      }
+    }
+    return [...grupos].map(([clave, valores]) => ({ clave, valor: promedio(valores) }));
+  }
+
+  function firmaCriterios(s) {
+    const firmas = s.respuestas.map(({ analisis }) => {
+      const claves = analisis.indicadores.map((i) => i.clave).sort().join(",");
+      return `${analisis.versionReglas || 1}:${claves}`;
+    });
+    return [...new Set(firmas)].sort().join("|");
+  }
+
+  function comparables(a, b) {
+    return a.configuracion.puesto === b.configuracion.puesto &&
+      a.configuracion.tema === b.configuracion.tema && firmaCriterios(a) === firmaCriterios(b);
+  }
+
+  function etiquetaSesion(s) {
+    return `${PUESTOS[s.configuracion.puesto]} · ${TEMAS[s.configuracion.tema]} · ${fecha(s.creada)}`;
+  }
+
+  // Dashboard e historial
+  function renderInicio() {
+    mostrarPerfil();
+    const sesiones = sesionesOrdenadas();
+    const finalizadas = sesionesOrdenadas("finalizada").sort((a, b) => b.finalizada.localeCompare(a.finalizada));
+    texto("total-practicas", finalizadas.length);
+    texto("tiempo-total", duracion(sesiones.reduce((n, s) => n + s.segundosActivos, 0)));
+    texto("ultima-practica", finalizadas[0] ? fecha(finalizadas[0].finalizada) : "Sin prácticas");
+
+    let mayor = null;
+    let reciente = null;
+    for (let i = 0; i < finalizadas.length; i++) {
+      const ultima = finalizadas[i];
+      const anterior = finalizadas.slice(i + 1).find((s) => comparables(ultima, s));
+      if (!anterior) continue;
+      const diferencia = indiceSesion(ultima) - indiceSesion(anterior);
+      mayor = mayor === null ? diferencia : Math.max(mayor, diferencia);
+      if (reciente === null) reciente = diferencia;
+    }
+    texto("mayor-mejora", mayor === null ? "Sin datos" : `+${Math.max(0, mayor)} puntos`);
+    texto("progreso-reciente", reciente === null
+      ? "Completa dos prácticas del mismo puesto y tema para comparar sus índices."
+      : `Tu cambio más reciente fue de ${reciente > 0 ? "+" : ""}${reciente} puntos de estructura.`);
+
+    const pendiente = sesiones.find((s) => s.estado === "pendiente");
+    $("practica-pendiente-inicio").hidden = !pendiente;
+    if (pendiente) texto("descripcion-pendiente", etiquetaSesion(pendiente));
+
+    const recientes = $("practicas-recientes");
+    recientes.replaceChildren();
+    if (!sesiones.length) recientes.append(elemento("p", "Todavía no tienes prácticas registradas.", "estado-vacio"));
+    for (const s of sesiones.slice(0, 3)) {
+      const fila = elemento("div", "", "practica-reciente");
+      const info = elemento("div");
+      info.append(elemento("strong", PUESTOS[s.configuracion.puesto]), elemento("p", fecha(s.creada)));
+      const pendiente = s.estado === "pendiente";
+      fila.append(info, boton(pendiente ? "Continuar" : `${indiceSesion(s)}/100`,
+        () => pendiente ? continuar(s) : verResultado(s), "boton boton--texto"));
+      recientes.append(fila);
+    }
+  }
+
+  $("continuar-pendiente-inicio").addEventListener("click", () => continuar(sesionesOrdenadas("pendiente")[0]));
+
+  function renderHistorial() {
+    const sesiones = sesionesOrdenadas();
+    const estado = $("historial-estado").value;
+    const dias = { semana: 7, mes: 30 }[$("historial-periodo").value];
+    const limite = dias ? Date.now() - dias * 86400000 : -Infinity;
+    const visibles = sesiones.filter((s) =>
+      (estado === "todas" || s.estado === estado) && Date.parse(s.actualizada) >= limite);
+
+    texto("cantidad-practicas-guardadas", `${sesiones.length} prácticas guardadas`);
+    const panel = $("lista-historial");
+    panel.replaceChildren();
+    if (!visibles.length) {
+      panel.append(elemento("p", sesiones.length ? "Ninguna práctica coincide con estos filtros." :
+        "Tus prácticas guardadas aparecerán aquí.", "tarjeta estado-vacio"));
+    }
+    for (const s of visibles) {
+      const fila = elemento("article", "", "tarjeta practica-historial");
+      const info = elemento("div", "", "practica-historial__datos");
+      info.append(
+        elemento("h2", PUESTOS[s.configuracion.puesto]),
+        elemento("p", `${TEMAS[s.configuracion.tema]} · ${fecha(s.creada)}`),
+        elemento("p", `${s.respuestas.length} de ${s.preguntas.length} respondidas · ${duracion(s.segundosActivos)}`),
+        elemento("span", s.estado === "pendiente" ? "Pendiente" : "Finalizada", "etiqueta")
+      );
+      const acciones = elemento("div", "", "practica-historial__acciones");
+      if (s.estado === "pendiente") acciones.append(boton("Continuar práctica", () => continuar(s)));
+      else acciones.append(boton("Ver resultados", () => verResultado(s)), boton("Repetir práctica", () => repetir(s)));
+      fila.append(info, acciones);
+      panel.append(fila);
+    }
+  }
+
+  $("formulario-filtros-historial").addEventListener("submit", (evento) => {
+    evento.preventDefault();
+    renderHistorial();
   });
 
-  /* --------------------------------------------------------
-     14. RESULTADOS
-     -------------------------------------------------------- */
-
-  function firmaIndicadores(sesion) {
-    return JSON.stringify(unicos(sesion.respuestas.map(respuesta => {
-      const analisis = respuesta.analisis;
-      return [analisis.versionReglas, ...analisis.indicadores.map(i => i.clave).sort()].join(":");
-    })).sort());
+  // Resultados y autoevaluación
+  function resultadoActual() {
+    const finalizadas = sesionesOrdenadas("finalizada");
+    return finalizadas.find((s) => s.id === resultadoId) ||
+      finalizadas.sort((a, b) => b.finalizada.localeCompare(a.finalizada))[0];
   }
 
-  function sonComparables(a, b) {
-    return a.configuracion.tema === b.configuracion.tema &&
-      firmaIndicadores(a) === firmaIndicadores(b);
-  }
-
-  function resumenSesion(sesion) {
-    const revisiones = sesion.respuestas
-      .map(respuesta => respuesta.analisis);
-
-    const grupos = {};
-
-    revisiones.forEach(analisis => {
-      analisis.indicadores.forEach(indicador => {
-        grupos[indicador.clave] ||= [];
-        grupos[indicador.clave].push(indicador.valor);
-      });
-    });
-
-    const indicadores = Object.entries(grupos).map(
-      ([clave, valores]) => ({
-        clave,
-        valor: Math.round(
-          valores.reduce((suma, valor) => suma + valor, 0) /
-          valores.length
-        )
-      })
-    );
-
-    return {
-      puntuacion: revisiones.length
-        ? Math.round(
-            revisiones.reduce(
-              (suma, analisis) => suma + analisis.puntuacion,
-              0
-            ) / revisiones.length
-          )
-        : 0,
-
-      indicadores,
-
-      fortalezas: unicos(
-        revisiones.flatMap(analisis => analisis.fortalezas)
-      ),
-
-      mejoras: unicos(
-        revisiones.flatMap(analisis => analisis.mejoras)
-      ),
-
-      recomendaciones: unicos(
-        revisiones.flatMap(analisis => analisis.recomendaciones)
-      )
-    };
-  }
-
-  function detalleRespuestaHTML(sesion, pregunta, indice) {
-    const respuesta = sesion.respuestas.find(
-      item => item.preguntaId === pregunta.id
-    );
-
-    if (!respuesta) return "";
-
-    const analisis = respuesta.analisis;
-
-    const camposSTAR = analisis.apartados.length
-      ? `
-        <h4>Apartados STAR registrados</h4>
-
-        <div class="star-resumen">
-          ${analisis.apartados.map(apartado => `
-            <div class="star-resumen__elemento">
-              <strong>${escapar(apartado.clave)}</strong>
-              <span>
-                ${apartado.completo ? "Completado" : "Por desarrollar"}
-              </span>
-            </div>
-          `).join("")}
-        </div>
-
-        ${Object.entries(respuesta.star)
-          .filter(([, contenido]) => contenido)
-          .map(([clave, contenido]) => `
-            <p>
-              <strong>${escapar(clave)}:</strong>
-              ${escapar(contenido)}
-            </p>
-          `).join("")}
-      `
-      : "";
-
-    const intentos = respuesta.intentos.length
-      ? `
-        <details class="acordeon">
-          <summary>
-            Ver ${respuesta.intentos.length} intento(s) anterior(es)
-          </summary>
-
-          ${respuesta.intentos.map((intento, numero) => `
-            <article>
-              <h4>Intento ${numero + 1}</h4>
-              <p class="respuesta-detalle__texto">
-                ${escapar(intento.texto)}
-              </p>
-            </article>
-          `).join("")}
-        </details>
-      `
-      : "";
-
-    return `
-      <article class="respuesta-detalle">
-        <h3>Pregunta ${indice + 1}: ${escapar(pregunta.texto)}</h3>
-
-        <p class="respuesta-detalle__texto">${escapar(respuesta.texto)}</p>
-
-        ${camposSTAR}
-
-        <h4>Aspectos para revisar</h4>
-
-        <ul>${
-          listaHTML(
-            analisis.mejoras.length
-              ? analisis.mejoras
-              : ["Revisa manualmente que el contenido responda a la pregunta."]
-          )
-        }</ul>
-
-        <h4>Recomendaciones</h4>
-        <ul>${listaHTML(analisis.recomendaciones)}</ul>
-
-        <details class="acordeon">
-          <summary>Consultar criterios y motivo de la revisión</summary>
-          ${criteriosHTML(
-            analisis.indicadores.map(item => item.clave)
-          )}
-        </details>
-
-        ${intentos}
-      </article>
-    `;
-  }
-
-  function obtenerResultadoActivo() {
-    let sesion = buscarSesion(resultadoActivo);
-
-    if (!sesion || sesion.estado !== "finalizada") {
-      sesion = [...datos.sesiones]
-        .filter(item => item.estado === "finalizada")
-        .sort((a, b) => b.finalizada.localeCompare(a.finalizada))[0];
+  function detalleRespuesta(s, p, indice) {
+    const r = respuestaDe(s, p);
+    const panel = elemento("details", "", "acordeon respuesta-detalle");
+    panel.append(elemento("summary", `${indice + 1}. ${p.texto}`));
+    if (!r) {
+      panel.append(elemento("p", "Sin respuesta guardada."));
+      return panel;
     }
-
-    resultadoActivo = sesion?.id || null;
-    return sesion;
+    panel.append(elemento("p", r.texto, "respuesta-detalle__texto"),
+      elemento("p", `Índice de estructura: ${r.analisis.puntuacion}/100`));
+    for (const [c, nombre] of Object.entries(STAR)) {
+      if (r.star?.[c]) panel.append(elemento("p", `${nombre}: ${r.star[c]}`));
+    }
+    for (const comentario of [...r.analisis.fortalezas, ...r.analisis.mejoras, ...r.analisis.recomendaciones]) {
+      panel.append(elemento("p", comentario));
+    }
+    (r.intentos || []).forEach((intento, i) => {
+      const previo = elemento("details", "", "acordeon");
+      previo.append(elemento("summary", `Respuesta anterior ${i + 1}`),
+        elemento("p", intento.texto, "respuesta-detalle__texto"));
+      panel.append(previo);
+    });
+    return panel;
   }
 
   function renderResultados() {
-    const sesion = obtenerResultadoActivo();
+    const s = resultadoActual();
+    $("resultados-vacios").hidden = Boolean(s);
+    $("contenido-resultados").hidden = !s;
+    if (!s) return;
+    resultadoId = s.id;
 
-    $("#resultados-vacios").hidden = Boolean(sesion);
-    $("#contenido-resultados").hidden = !sesion;
-
-    if (!sesion) return;
-
-    const resumen = resumenSesion(sesion);
-
-    $("#resultado-puesto").textContent =
-      PUESTOS[sesion.configuracion.puesto];
-
-    $("#resultado-tema").textContent =
-      TEMAS[sesion.configuracion.tema];
-
-    $("#resultado-duracion").textContent =
-      formatoDuracion(sesion.segundosActivos);
-
-    $("#resultado-preguntas").textContent =
-      sesion.respuestas.length;
-
-    $("#resultado-puntuacion").textContent = resumen.puntuacion;
-
-    $("#resultado-descripcion").textContent =
-      "Índice orientativo de desarrollo y organización explícita. " +
-      "No mide la corrección técnica.";
-
-    $("#resultado-indicadores").innerHTML =
-      resumen.indicadores.map(indicador =>
-        indicadorHTML(indicador.clave, indicador.valor)
-      ).join("");
-
-    $("#resultado-fortalezas").innerHTML =
-      listaHTML(resumen.fortalezas);
-
-    $("#resultado-mejoras").innerHTML =
-      listaHTML(
-        resumen.mejoras.length
-          ? resumen.mejoras
-          : ["Revisa la pertinencia, claridad y precisión de tus ejemplos."]
-      );
-
-    $("#resultado-recomendaciones").innerHTML =
-      listaHTML(resumen.recomendaciones);
-
-    $("#resultado-respuestas").innerHTML =
-      sesion.preguntas.map((pregunta, indice) =>
-        detalleRespuestaHTML(sesion, pregunta, indice)
-      ).join("");
-
-    $("#resultado-criterios").innerHTML =
-      criteriosHTML(resumen.indicadores.map(item => item.clave)) +
-      "<p>El índice general promedia las puntuaciones de las respuestas. " +
-      "Cada respuesta promedia sus indicadores aplicables. " +
-      "No se analizan voz, pausas, lenguaje corporal ni veracidad.</p>";
-
-    $("#formulario-autoevaluacion-final").reset();
-
-    if (sesion.autoevaluacionFinal) {
-      $(
-        `input[name="autoevaluacionFinal"]` +
-        `[value="${sesion.autoevaluacionFinal}"]`
-      ).checked = true;
+    texto("resultado-puesto", PUESTOS[s.configuracion.puesto]);
+    texto("resultado-tema", TEMAS[s.configuracion.tema]);
+    texto("resultado-duracion", duracion(s.segundosActivos));
+    texto("resultado-preguntas", `${s.respuestas.length} de ${s.preguntas.length}`);
+    texto("resultado-puntuacion", indiceSesion(s));
+    texto("resultado-descripcion", `Práctica finalizada el ${fecha(s.finalizada)}.`);
+    pintarIndicadores($("resultado-indicadores"), indicadoresSesion(s));
+    for (const clave of ["fortalezas", "mejoras", "recomendaciones"]) {
+      listar(`resultado-${clave}`, s.respuestas.flatMap((r) => r.analisis[clave]), "Sin observaciones adicionales.");
     }
+    $("resultado-respuestas").replaceChildren(...s.preguntas.map((p, i) => detalleRespuesta(s, p, i)));
+    texto("resultado-criterios",
+      "La organización identifica señales escritas de contexto, objetivo, acción y resultado. " +
+      "En preguntas personales y situacionales, STAR cuenta los apartados distintos con al menos tres palabras. " +
+      "Cada respuesta obtiene el promedio de sus indicadores.");
 
-    $("#resultado-autoevaluacion").textContent =
-      sesion.autoevaluacionFinal
-        ? `Tu valoración: ${NIVELES[sesion.autoevaluacionFinal]}.`
-        : "Todavía no has registrado tu valoración final.";
+    const form = $("formulario-autoevaluacion-final");
+    form.reset();
+    if (s.autoevaluacionFinal) form.elements.autoevaluacionFinal.value = String(s.autoevaluacionFinal);
+    texto("resultado-autoevaluacion",
+      `Antes: ${NIVELES[s.autoevaluacionInicial] || "Sin registrar"}. Después: ${NIVELES[s.autoevaluacionFinal] || "Pendiente"}.`);
   }
 
-  $("#formulario-autoevaluacion-final").addEventListener(
-    "submit",
-    evento => {
-      evento.preventDefault();
-
-      if (!evento.currentTarget.reportValidity()) return;
-
-      const sesion = obtenerResultadoActivo();
-      if (!sesion) return;
-
-      const nivel = Number(
-        new FormData(evento.currentTarget).get("autoevaluacionFinal")
-      );
-      if (!Object.hasOwn(NIVELES, nivel) ||
-          !persistirSesion({ ...sesion, autoevaluacionFinal: nivel })) return;
-
-      $("#resultado-autoevaluacion").textContent =
-        `Tu valoración: ${NIVELES[nivel]}.`;
-
+  $("formulario-autoevaluacion-final").addEventListener("submit", (evento) => {
+    evento.preventDefault();
+    const s = resultadoActual();
+    const valor = Number(evento.currentTarget.elements.autoevaluacionFinal.value);
+    if (!s || !NIVELES[valor]) return;
+    if (persistir({ ...s, autoevaluacionFinal: valor, actualizada: ahora() })) {
+      renderResultados();
       notificar("Autoevaluación guardada.");
     }
-  );
-
-  function prepararRepeticion(id) {
-    const original = buscarSesion(id);
-
-    if (!original || original.estado !== "finalizada") return;
-
-    configuracionPendiente = { ...original.configuracion };
-    preguntasPendientes = original.preguntas.map(
-      pregunta => ({ ...pregunta })
-    );
-
-    $("#formulario-preparacion").reset();
-    actualizarChecklist();
-
-    navegar("preparacion");
-
-    notificar(
-      "Se iniciará una práctica nueva con las mismas preguntas. " +
-      "La práctica anterior se conservará."
-    );
-  }
-
-  $("#repetir-practica-resultados").addEventListener("click", () => {
-    prepararRepeticion(resultadoActivo);
   });
 
-  $("#comparar-desde-resultados").addEventListener("click", () => {
+  $("repetir-practica-resultados").addEventListener("click", () => repetir(resultadoActual()));
+  $("comparar-desde-resultados").addEventListener("click", () => {
+    compararCon = resultadoActual()?.id || null;
     navegar("comparacion");
-
-    if (resultadoActivo) {
-      $("#intento-b").value = resultadoActivo;
-    }
   });
 
-  /* --------------------------------------------------------
-     15. INICIO E HISTORIAL
-     -------------------------------------------------------- */
-
-  function renderInicio() {
-    actualizarPerfilInterfaz();
-
-    const finalizadas = datos.sesiones
-      .filter(sesion => sesion.estado === "finalizada")
-      .sort((a, b) => b.finalizada.localeCompare(a.finalizada));
-
-    const pendientes = datos.sesiones
-      .filter(sesion => sesion.estado === "pendiente")
-      .sort((a, b) => b.actualizada.localeCompare(a.actualizada));
-
-    $("#total-practicas").textContent = finalizadas.length;
-
-    $("#tiempo-total").textContent = formatoDuracion(
-      finalizadas.reduce(
-        (total, sesion) => total + sesion.segundosActivos,
-        0
-      )
-    );
-
-    $("#ultima-practica").textContent = finalizadas[0]
-      ? formatoFecha(finalizadas[0].finalizada)
-      : "Sin prácticas";
-
-    $("#practica-pendiente-inicio").hidden = !pendientes.length;
-
-    if (pendientes[0]) {
-      $("#descripcion-pendiente").textContent =
-        `${PUESTOS[pendientes[0].configuracion.puesto]} · ` +
-        `${pendientes[0].respuestas.length} de ` +
-        `${pendientes[0].preguntas.length} respuestas guardadas`;
-    }
-
-    $("#practicas-recientes").innerHTML = finalizadas.length
-      ? finalizadas.slice(0, 3).map(sesion => `
-          <article class="practica-reciente">
-            <div>
-              <h3>${escapar(PUESTOS[sesion.configuracion.puesto])}</h3>
-              <p>
-                ${escapar(formatoFecha(sesion.finalizada))}
-                · ${escapar(TEMAS[sesion.configuracion.tema])}
-              </p>
-            </div>
-
-            <button
-              class="boton boton--texto"
-              type="button"
-              data-ver-resultado="${escapar(sesion.id)}"
-            >
-              ${resumenSesion(sesion).puntuacion}/100
-              <span class="solo-lectores">Ver resultados</span>
-            </button>
-          </article>
-        `).join("")
-      : `
-        <p class="estado-vacio">
-          Todavía no tienes prácticas registradas.
-          Comienza tu primera simulación.
-        </p>
-      `;
-
-    const reciente = finalizadas[0];
-
-    const anterior = reciente
-      ? finalizadas.find(sesion =>
-          sesion.id !== reciente.id &&
-          sesion.configuracion.puesto === reciente.configuracion.puesto &&
-          sonComparables(sesion, reciente)
-        )
-      : null;
-
-    if (!reciente || !anterior) {
-      $("#mayor-mejora").textContent = "Sin datos";
-
-      $("#progreso-reciente").innerHTML = `
-        <p class="estado-vacio">
-          Completa dos prácticas del mismo puesto para revisar cambios.
-        </p>
-      `;
-
-      return;
-    }
-
-    const actual = resumenSesion(reciente);
-    const previo = resumenSesion(anterior);
-
-    const cambios = actual.indicadores
-      .map(indicador => {
-        const comparable = previo.indicadores.find(
-          item => item.clave === indicador.clave
-        );
-
-        return comparable
-          ? {
-              ...indicador,
-              diferencia: indicador.valor - comparable.valor
-            }
-          : null;
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.diferencia - a.diferencia);
-
-    $("#mayor-mejora").textContent =
-      cambios[0]?.diferencia > 0
-        ? CRITERIOS[cambios[0].clave].nombre
-        : "Sin aumento";
-
-    $("#progreso-reciente").innerHTML =
-      cambios.map(indicador =>
-        indicadorHTML(
-          indicador.clave,
-          indicador.valor,
-          `Cambio: ${indicador.diferencia > 0 ? "+" : ""}` +
-          `${indicador.diferencia} puntos`
-        )
-      ).join("");
+  // Comparación de intentos
+  function opcionesSesiones(select, sesiones, titulo) {
+    select.replaceChildren(new Option(titulo, ""));
+    sesiones.forEach((s, i) => select.add(new Option(`${i + 1}. ${etiquetaSesion(s)}`, s.id)));
   }
 
-  function renderHistorial() {
-    const estado = $("#historial-estado").value;
-    const periodo = $("#historial-periodo").value;
-
-    const dias =
-      periodo === "semana" ? 7 :
-      periodo === "mes" ? 30 : null;
-
-    const limite = dias
-      ? Date.now() - dias * 24 * 60 * 60 * 1000
-      : null;
-
-    const sesiones = datos.sesiones
-      .filter(sesion =>
-        (estado === "todas" || sesion.estado === estado) &&
-        (!limite || new Date(sesion.creada).getTime() >= limite)
-      )
-      .sort((a, b) => b.actualizada.localeCompare(a.actualizada));
-
-    $("#cantidad-practicas-guardadas").textContent =
-      `${datos.sesiones.length} prácticas guardadas · ` +
-      `${sesiones.length} visibles`;
-
-    $("#lista-historial").innerHTML = sesiones.length
-      ? sesiones.map(sesion => {
-          const finalizada = sesion.estado === "finalizada";
-
-          return `
-            <article class="tarjeta practica-historial">
-              <div>
-                <h2>
-                  ${escapar(PUESTOS[sesion.configuracion.puesto])}
-                </h2>
-
-                <p class="practica-historial__datos">
-                  ${escapar(formatoFecha(sesion.creada))}
-                  · ${sesion.preguntas.length} preguntas
-                </p>
-              </div>
-
-              <div class="practica-historial__datos">
-                <p>${escapar(TEMAS[sesion.configuracion.tema])}</p>
-                <span class="etiqueta ${
-                  finalizada
-                    ? "etiqueta--positiva"
-                    : "etiqueta--pendiente"
-                }">
-                  ${finalizada ? "Finalizada" : "Pendiente"}
-                </span>
-              </div>
-
-              <p class="practica-historial__resultado">
-                ${
-                  finalizada
-                    ? `${resumenSesion(sesion).puntuacion}/100`
-                    : `${sesion.respuestas.length}/${sesion.preguntas.length}`
-                }
-              </p>
-
-              <div class="practica-historial__acciones">
-                ${
-                  finalizada
-                    ? `
-                      <button
-                        class="boton boton--texto"
-                        type="button"
-                        data-ver-resultado="${escapar(sesion.id)}"
-                      >
-                        Ver informe
-                      </button>
-
-                      <button
-                        class="boton boton--secundario"
-                        type="button"
-                        data-repetir-practica="${escapar(sesion.id)}"
-                      >
-                        Repetir
-                      </button>
-                    `
-                    : `
-                      <button
-                        class="boton boton--primario"
-                        type="button"
-                        data-continuar="${escapar(sesion.id)}"
-                      >
-                        Continuar
-                      </button>
-                    `
-                }
-              </div>
-            </article>
-          `;
-        }).join("")
-      : `
-        <div class="tarjeta estado-vacio">
-          <h2>No hay prácticas para mostrar</h2>
-          <p>Cambia los filtros o comienza una nueva simulación.</p>
-        </div>
-      `;
+  function actualizarSegundoIntento() {
+    const sesiones = sesionesOrdenadas("finalizada");
+    const a = sesiones.find((s) => s.id === $("intento-a").value);
+    const candidatas = a ? sesiones.filter((s) => s.id !== a.id && s.configuracion.puesto === a.configuracion.puesto) : [];
+    opcionesSesiones($("intento-b"), candidatas, "Selecciona otra práctica");
+    $("intento-b").disabled = !candidatas.length;
+    $("contenido-comparacion").hidden = true;
+    mensaje("error-comparacion");
   }
 
-  $("#formulario-filtros-historial").addEventListener(
-    "submit",
-    evento => {
-      evento.preventDefault();
-      renderHistorial();
-    }
-  );
-
-  document.addEventListener("click", evento => {
-    const resultado = evento.target.closest("[data-ver-resultado]");
-    const continuar = evento.target.closest("[data-continuar]");
-    const repetir = evento.target.closest("[data-repetir-practica]");
-
-    if (resultado) {
-      resultadoActivo = resultado.dataset.verResultado;
-      navegar("resultados");
-    }
-
-    if (continuar) {
-      continuarSesion(continuar.dataset.continuar);
-    }
-
-    if (repetir) {
-      prepararRepeticion(repetir.dataset.repetirPractica);
-    }
-  });
-
-  /* --------------------------------------------------------
-     16. COMPARACIÓN
-     -------------------------------------------------------- */
-
-  function rellenarComparadores() {
-    const valorA = $("#intento-a").value;
-    const valorB = $("#intento-b").value;
-
-    const sesiones = datos.sesiones
-      .filter(sesion => sesion.estado === "finalizada")
-      .sort((a, b) => b.finalizada.localeCompare(a.finalizada));
-
-    const opciones = sesiones.map(sesion => `
-      <option value="${escapar(sesion.id)}">
-        ${escapar(PUESTOS[sesion.configuracion.puesto])}
-        · ${escapar(formatoFecha(sesion.finalizada))}
-        · ${escapar(TEMAS[sesion.configuracion.tema])}
-        · ${escapar(sesion.id.slice(-6))}
-      </option>
-    `).join("");
-
-    $("#intento-a").innerHTML =
-      '<option value="">Selecciona una práctica</option>' + opciones;
-
-    $("#intento-b").innerHTML =
-      '<option value="">Selecciona otra práctica</option>' + opciones;
-
-    if (sesiones.some(sesion => sesion.id === valorA)) {
-      $("#intento-a").value = valorA;
-    }
-
-    if (sesiones.some(sesion => sesion.id === valorB)) {
-      $("#intento-b").value = valorB;
-    }
+  function renderSelectoresComparacion() {
+    const sesiones = sesionesOrdenadas("finalizada");
+    opcionesSesiones($("intento-a"), sesiones, "Selecciona una práctica");
+    if (compararCon) $("intento-a").value = compararCon;
+    compararCon = null;
+    actualizarSegundoIntento();
+    const hayPar = sesiones.some((a, i) =>
+      sesiones.slice(i + 1).some((b) => a.configuracion.puesto === b.configuracion.puesto));
+    $("comparacion-vacia").hidden = hayPar;
   }
 
-  for (const selector of ["#intento-a", "#intento-b"]) {
-    $(selector).addEventListener("change", () => {
-      comparacionActiva = null;
-      $("#contenido-comparacion").hidden = true;
-      $("#error-comparacion").hidden = true;
-    });
-  }
+  $("intento-a").addEventListener("change", actualizarSegundoIntento);
+  $("intento-b").addEventListener("change", () => { $("contenido-comparacion").hidden = true; });
 
-  $("#formulario-comparacion").addEventListener("submit", evento => {
+  $("formulario-comparacion").addEventListener("submit", (evento) => {
     evento.preventDefault();
-
-    if (!evento.currentTarget.reportValidity()) return;
-
-    let anterior = buscarSesion($("#intento-a").value);
-    let reciente = buscarSesion($("#intento-b").value);
-
-    const error = $("#error-comparacion");
-
-    if (
-      !anterior ||
-      !reciente ||
-      anterior.id === reciente.id ||
-      anterior.estado !== "finalizada" ||
-      reciente.estado !== "finalizada" ||
-      anterior.configuracion.puesto !== reciente.configuracion.puesto
-    ) {
-      error.textContent =
-        "Selecciona dos prácticas finalizadas, diferentes y del mismo puesto.";
-
-      error.hidden = false;
-      $("#contenido-comparacion").hidden = true;
-      $("#comparacion-vacia").hidden = false;
-
+    const sesiones = sesionesOrdenadas("finalizada");
+    const a = sesiones.find((s) => s.id === $("intento-a").value);
+    const b = sesiones.find((s) => s.id === $("intento-b").value);
+    if (!a || !b || a.id === b.id || a.configuracion.puesto !== b.configuracion.puesto) {
+      mensaje("error-comparacion", "Selecciona dos prácticas diferentes y finalizadas del mismo puesto.");
       return;
     }
 
-    error.hidden = true;
+    mensaje("error-comparacion");
+    const [antes, despues] = [a, b].sort((x, y) => x.creada.localeCompare(y.creada));
+    recienteComparada = despues;
+    const compatibles = comparables(antes, despues);
+    const diferencia = indiceSesion(despues) - indiceSesion(antes);
+    texto("comparacion-fecha-anterior", fecha(antes.creada));
+    texto("comparacion-fecha-reciente", fecha(despues.creada));
+    texto("comparacion-puntuacion-anterior", `${indiceSesion(antes)}/100`);
+    texto("comparacion-puntuacion-reciente", `${indiceSesion(despues)}/100`);
+    texto("comparacion-diferencia", compatibles ? `${diferencia > 0 ? "+" : ""}${diferencia} puntos` : "Criterios diferentes");
+    texto("comparacion-interpretacion", compatibles ? "Cambio en el índice de estructura." :
+      "Los temas o criterios difieren. Revisa las respuestas de cada práctica.");
 
-    if (anterior.finalizada > reciente.finalizada) {
-      [anterior, reciente] = [reciente, anterior];
-    }
-
-    comparacionActiva = {
-      anterior: anterior.id,
-      reciente: reciente.id
-    };
-
-    const previo = resumenSesion(anterior);
-    const actual = resumenSesion(reciente);
-    const comparableGlobal = sonComparables(anterior, reciente);
-    const diferencia = actual.puntuacion - previo.puntuacion;
-
-    $("#comparacion-fecha-anterior").textContent =
-      formatoFecha(anterior.finalizada);
-
-    $("#comparacion-fecha-reciente").textContent =
-      formatoFecha(reciente.finalizada);
-
-    $("#comparacion-puntuacion-anterior").textContent =
-      `${previo.puntuacion}/100`;
-
-    $("#comparacion-puntuacion-reciente").textContent =
-      `${actual.puntuacion}/100`;
-
-    $("#comparacion-diferencia").textContent =
-      comparableGlobal ? `${diferencia > 0 ? "+" : ""}${diferencia} puntos` : "Sin delta";
-
-    $("#comparacion-interpretacion").textContent =
-      !comparableGlobal ? "Los temas o criterios son distintos." : diferencia > 0
-        ? "Aumentó el índice orientativo."
-        : diferencia < 0
-          ? "Disminuyó el índice orientativo."
-          : "El índice orientativo se mantuvo.";
-
+    const anteriores = indicadoresSesion(antes);
+    const panel = $("comparacion-indicadores");
+    panel.replaceChildren();
     const cambios = [];
-
-    $("#comparacion-indicadores").innerHTML =
-      actual.indicadores.map(indicador => {
-        const comparable = previo.indicadores.find(
-          item => item.clave === indicador.clave
-        );
-
-        if (!comparable || !comparableGlobal) {
-          return indicadorHTML(
-            indicador.clave,
-            indicador.valor,
-            "Sin indicador equivalente en el intento anterior."
-          );
-        }
-
-        const cambio = indicador.valor - comparable.valor;
-
-        cambios.push(
-          `${CRITERIOS[indicador.clave].nombre}: ` +
-          `${comparable.valor} → ${indicador.valor} ` +
-          `(${cambio > 0 ? "+" : ""}${cambio} puntos).`
-        );
-
-        return indicadorHTML(
-          indicador.clave,
-          indicador.valor,
-          `Anterior: ${comparable.valor}/100 · ` +
-          `Cambio: ${cambio > 0 ? "+" : ""}${cambio} puntos`
-        );
-      }).join("");
-
-    $("#comparacion-cambios").innerHTML = listaHTML(cambios.length
-      ? cambios
-      : ["Las respuestas se pueden consultar sin comparar los índices."]);
-
-    $("#comparacion-pendientes").innerHTML =
-      listaHTML(actual.recomendaciones);
-
-    /*
-      Se identifican preguntas compartidas por su ID.
-      Las preguntas distintas se muestran con su propio texto,
-      sin tratarlas como si fueran equivalentes.
-    */
-    const preguntas = unicos([
-      ...anterior.preguntas.map(pregunta => pregunta.id),
-      ...reciente.preguntas.map(pregunta => pregunta.id)
-    ]);
-
-    $("#comparacion-respuestas").innerHTML =
-      preguntas.map(id => {
-        const pregunta =
-          reciente.preguntas.find(item => item.id === id) ||
-          anterior.preguntas.find(item => item.id === id);
-
-        const respuestaA = anterior.respuestas.find(
-          item => item.preguntaId === id
-        );
-
-        const respuestaB = reciente.respuestas.find(
-          item => item.preguntaId === id
-        );
-
-        return `
-          <section class="respuesta-detalle">
-            <h3>${escapar(pregunta.texto)}</h3>
-
-            <div class="comparacion-respuestas__fila">
-              <article>
-                <h4>Intento anterior</h4>
-                <p>${escapar(
-                  respuestaA?.texto ||
-                  "Esta pregunta no se respondió en esa práctica."
-                )}</p>
-              </article>
-
-              <article>
-                <h4>Intento reciente</h4>
-                <p>${escapar(
-                  respuestaB?.texto ||
-                  "Esta pregunta no se respondió en esa práctica."
-                )}</p>
-              </article>
-            </div>
-          </section>
-        `;
-      }).join("");
-
-    $("#comparacion-vacia").hidden = true;
-    $("#contenido-comparacion").hidden = false;
-
-    notificar(
-      "Comparación disponible. Considera las diferencias de preguntas y temas."
-    );
-  });
-
-  $("#repetir-practica-comparacion").addEventListener("click", () => {
-    if (comparacionActiva) {
-      prepararRepeticion(comparacionActiva.reciente);
+    const pendientes = [];
+    for (const i of indicadoresSesion(despues)) {
+      const previo = anteriores.find((p) => p.clave === i.clave);
+      panel.append(elemento("p", `${CRITERIOS[i.clave] || i.clave}: ${previo?.valor ?? "—"} → ${i.valor}`));
+      if (compatibles && previo && i.valor > previo.valor) cambios.push(`Aumentó el indicador «${CRITERIOS[i.clave]}».`);
+      if (i.valor < 100) pendientes.push(`Revisar el indicador «${CRITERIOS[i.clave]}».`);
     }
+    panel.append(elemento("p", `Autoevaluación final: ${NIVELES[antes.autoevaluacionFinal] || "Sin registrar"} → ` +
+      `${NIVELES[despues.autoevaluacionFinal] || "Sin registrar"}.`));
+    listar("comparacion-cambios", cambios, compatibles ? "Sin aumentos en los indicadores comunes." : "Revisa las diferencias pregunta por pregunta.");
+    listar("comparacion-pendientes", pendientes, "Practica con preguntas diferentes.");
+
+    const respuestas = $("comparacion-respuestas");
+    respuestas.replaceChildren();
+    for (const [s, titulo] of [[antes, "Intento anterior"], [despues, "Intento reciente"]]) {
+      respuestas.append(elemento("h3", titulo), ...s.preguntas.map((p, i) => detalleRespuesta(s, p, i)));
+    }
+    $("contenido-comparacion").hidden = false;
+    $("comparacion-vacia").hidden = true;
   });
 
-  /* --------------------------------------------------------
-     17. BANCO Y FILTROS
-     -------------------------------------------------------- */
+  $("repetir-practica-comparacion").addEventListener("click", () => repetir(recienteComparada));
 
-  const PREGUNTAS_POR_PAGINA = 12;
-  let paginaBanco = 0;
+  // Banco de preguntas
+  function practicarPregunta(p) {
+    formularioConfig.elements.puesto.value = p.puesto;
+    formularioConfig.elements.tema.value = {
+      personal: "personales", situacional: "situacionales",
+      conocimiento: "conocimientos", "caso-tecnico": "conocimientos"
+    }[p.tipo];
+    formularioConfig.elements.cantidad.value = "personalizada";
+    $("cantidad-personalizada").value = "1";
+    preguntaElegida = p.id;
+    navegar("configuracion");
+    notificar("Pregunta seleccionada. Revisa el contexto para comenzar.");
+  }
 
   function renderBanco() {
-    const busqueda = normalizar($("#buscar-pregunta").value.trim());
-    const puesto = $("#banco-puesto").value;
-    const tipo = $("#banco-tipo").value;
+    const busqueda = normalizar($("buscar-pregunta").value.trim());
+    const puesto = $("banco-puesto").value;
+    const tipo = $("banco-tipo").value;
+    const filtradas = banco.filter((p) =>
+      (!puesto || p.puesto === puesto) && (!tipo || p.tipo === tipo) &&
+      normalizar(`${p.texto} ${p.datos} ${PUESTOS[p.puesto]} ${TIPOS[p.tipo]}`).includes(busqueda));
+    const paginas = Math.max(1, Math.ceil(filtradas.length / POR_PAGINA));
+    paginaBanco = Math.min(Math.max(0, paginaBanco), paginas - 1);
+    const inicio = paginaBanco * POR_PAGINA;
 
-    const preguntas = BANCO.filter(pregunta =>
-      (!puesto || pregunta.puesto === puesto) &&
-      (!tipo || pregunta.tipo === tipo) &&
-      (
-        !busqueda ||
-        normalizar(
-          pregunta.texto + " " + PUESTOS[pregunta.puesto]
-        ).includes(busqueda)
-      )
-    );
+    texto("cantidad-preguntas-banco", `${banco.length} entradas distribuidas entre ${Object.keys(PUESTOS).length} puestos.`);
+    texto("estado-busqueda-banco", filtradas.length
+      ? `${filtradas.length} coincidencias. Página ${paginaBanco + 1} de ${paginas}.`
+      : "Ninguna pregunta coincide con los filtros.");
 
-    $("#cantidad-preguntas-banco").textContent =
-      `${BANCO.length} preguntas asociadas a los puestos disponibles.`;
-
-    const paginas = Math.max(1, Math.ceil(preguntas.length / PREGUNTAS_POR_PAGINA));
-    paginaBanco = Math.min(paginaBanco, paginas - 1);
-    const desde = paginaBanco * PREGUNTAS_POR_PAGINA;
-    const visibles = preguntas.slice(desde, desde + PREGUNTAS_POR_PAGINA);
-
-    $("#estado-busqueda-banco").textContent = preguntas.length
-      ? `${preguntas.length} preguntas · Página ${paginaBanco + 1} de ${paginas}`
-      : "No se encontraron preguntas.";
-
-    $("#paginacion-banco").hidden = paginas === 1;
-    $("#banco-anterior").disabled = paginaBanco === 0;
-    $("#banco-siguiente").disabled = paginaBanco >= paginas - 1;
-    $("#lista-banco").innerHTML = visibles.length
-      ? visibles.map(pregunta => `
-          <article class="tarjeta pregunta-banco">
-            <div class="pregunta-banco__etiquetas">
-              <span class="etiqueta">
-                ${escapar(TIPOS[pregunta.tipo])}
-              </span>
-
-              <span class="etiqueta etiqueta--celeste">
-                ${escapar(PUESTOS[pregunta.puesto])}
-              </span>
-            </div>
-
-            <h2>${escapar(pregunta.texto)}</h2>
-
-            ${
-              pregunta.datos
-                ? `<pre><code>${escapar(pregunta.datos)}</code></pre>`
-                : ""
-            }
-
-            <p>
-              ${
-                ["personal", "situacional"].includes(pregunta.tipo)
-                  ? "Utiliza un ejemplo real o explica cómo actuarías."
-                  : "Explica tu razonamiento y cómo comprobarías tu propuesta."
-              }
-            </p>
-
-            <button
-              class="boton boton--primario"
-              type="button"
-              data-practicar-pregunta="${escapar(pregunta.id)}"
-            >
-              Practicar
-            </button>
-          </article>
-        `).join("")
-      : `
-        <div class="tarjeta estado-vacio">
-          <h2>No se encontraron preguntas</h2>
-          <p>Prueba otros términos o modifica los filtros.</p>
-        </div>
-      `;
+    const panel = $("lista-banco");
+    panel.replaceChildren();
+    for (const p of filtradas.slice(inicio, inicio + POR_PAGINA)) {
+      const tarjeta = elemento("article", "", "tarjeta pregunta-banco");
+      const etiquetas = elemento("div", "", "pregunta-banco__etiquetas");
+      etiquetas.append(elemento("span", PUESTOS[p.puesto], "etiqueta"), elemento("span", TIPOS[p.tipo], "etiqueta"));
+      tarjeta.append(etiquetas, elemento("h2", p.texto));
+      if (p.datos) tarjeta.append(elemento("p", p.datos));
+      tarjeta.append(boton("Practicar esta pregunta", () => practicarPregunta(p), "boton boton--texto"));
+      panel.append(tarjeta);
+    }
+    $("paginacion-banco").hidden = paginas <= 1;
+    $("banco-anterior").disabled = paginaBanco === 0;
+    $("banco-siguiente").disabled = paginaBanco + 1 >= paginas;
   }
 
-  $("#formulario-filtros-banco").addEventListener("submit", evento => {
+  $("formulario-filtros-banco").addEventListener("submit", (evento) => {
     evento.preventDefault();
     paginaBanco = 0;
     renderBanco();
   });
 
-  $("#formulario-filtros-banco").addEventListener("reset", () => {
-    paginaBanco = 0;
-    setTimeout(renderBanco, 0);
+  $("formulario-filtros-banco").addEventListener("reset", () => {
+    setTimeout(() => { paginaBanco = 0; renderBanco(); }, 0);
   });
 
-  for (const [selector, paso] of [["#banco-anterior", -1], ["#banco-siguiente", 1]]) {
-    $(selector).addEventListener("click", () => {
-      paginaBanco = Math.max(0, paginaBanco + paso);
+  for (const [id, cambio] of [["banco-anterior", -1], ["banco-siguiente", 1]]) {
+    $(id).addEventListener("click", () => {
+      paginaBanco += cambio;
       renderBanco();
-      $("#estado-busqueda-banco").focus();
+      $("estado-busqueda-banco").focus();
     });
   }
 
-  $("#lista-banco").addEventListener("click", evento => {
-    const boton = evento.target.closest("[data-practicar-pregunta]");
-    if (!boton) return;
+  // Preferencias de lectura y recuperación al recargar
+  let escala = 100;
 
-    const pregunta = BANCO.find(
-      item => item.id === boton.dataset.practicarPregunta
-    );
-
-    if (!pregunta) return;
-
-    $("#puesto").value = pregunta.puesto;
-
-    const tema =
-      pregunta.tipo === "personal" ? "personales" :
-      pregunta.tipo === "situacional" ? "situacionales" :
-      "conocimientos";
-
-    $(
-      `#formulario-configuracion input[name="tema"][value="${tema}"]`
-    ).checked = true;
-
-    $(
-      '#formulario-configuracion input[name="cantidad"]' +
-      '[value="personalizada"]'
-    ).checked = true;
-
-    $("#cantidad-personalizada").value = 1;
-
-    actualizarResumen();
-
-    preguntaElegida = pregunta;
-    navegar("configuracion");
-
-    notificar(
-      "Completa el contexto de postulación. " +
-      "Si mantienes un único ejercicio y este tema, practicarás la pregunta elegida."
-    );
-  });
-
-  /* --------------------------------------------------------
-     18. GUÍA, PREGUNTAS FRECUENTES Y TEXTO
-     -------------------------------------------------------- */
-
-  $$("[data-abrir-guia]").forEach(boton => {
-    boton.addEventListener("click", () => {
-      if (!$("#dialogo-guia").open) {
-        $("#dialogo-guia").showModal();
+  function aplicarEscala(valor, recordar = true) {
+    escala = Math.min(150, Math.max(90, valor));
+    document.documentElement.style.setProperty("--tamano-base", `${escala}%`);
+    texto("estado-tamano-texto", `Tamaño del texto: ${escala} %`);
+    $("reducir-texto").disabled = escala <= 90;
+    $("aumentar-texto").disabled = escala >= 150;
+    if (recordar) {
+      try {
+        localStorage.setItem(CLAVE_TEXTO, String(escala));
+      } catch {
+        notificar("El tamaño cambió para esta visita. No se pudo guardar la preferencia.");
       }
-    });
-  });
-
-  /*
-    Los elementos <details> del HTML ya permiten abrir y cerrar
-    preguntas frecuentes con ratón o teclado.
-  */
-
-  function aplicarEscalaTexto() {
-    document.documentElement.style.setProperty(
-      "--tamano-base",
-      `${escalaTexto}%`
-    );
-
-    $("#estado-tamano-texto").textContent =
-      `Tamaño del texto: ${escalaTexto} %`;
-
-    $("#reducir-texto").disabled = escalaTexto <= 90;
-    $("#aumentar-texto").disabled = escalaTexto >= 150;
-  }
-
-  function cambiarEscala(cambio) {
-    escalaTexto = Math.min(150, Math.max(90, escalaTexto + cambio));
-
-    aplicarEscalaTexto();
-
-    try {
-      localStorage.setItem(CLAVE_TEXTO, String(escalaTexto));
-    } catch {
-      notificar(
-        "El tamaño cambió, pero la preferencia no pudo guardarse."
-      );
     }
   }
 
-  $("#reducir-texto").addEventListener("click", () => {
-    cambiarEscala(-10);
-  });
-
-  $("#aumentar-texto").addEventListener("click", () => {
-    cambiarEscala(10);
-  });
-
-  $("#restablecer-texto").addEventListener("click", () => {
-    escalaTexto = 100;
-    cambiarEscala(0);
-  });
-
-  /* --------------------------------------------------------
-     19. PERSISTENCIA AL SALIR Y PAUSAS
-     -------------------------------------------------------- */
-
-  function guardarAntesDeSalir() {
-    if (
-      vistaActual !== "simulacion" ||
-      !sesionActiva ||
-      sesionActiva.estado !== "pendiente"
-    ) {
-      return;
-    }
-
-    capturarBorrador();
-    detenerReloj();
-    pausarActividad();
-
-    guardarDatos();
-  }
+  $("reducir-texto").addEventListener("click", () => aplicarEscala(escala - 10));
+  $("aumentar-texto").addEventListener("click", () => aplicarEscala(escala + 10));
+  $("restablecer-texto").addEventListener("click", () => aplicarEscala(100));
 
   document.addEventListener("visibilitychange", () => {
-    if (
-      vistaActual !== "simulacion" ||
-      sesionActiva?.estado !== "pendiente"
-    ) {
-      return;
-    }
-
-    if (document.hidden) {
-      guardarAntesDeSalir();
-    } else {
-      iniciarActividad();
-      iniciarReloj();
-    }
+    if (vista !== "simulacion" || !activa) return;
+    if (document.hidden) pausarYGuardar();
+    else iniciarReloj();
   });
 
-  window.addEventListener("pagehide", guardarAntesDeSalir);
-
-  /* Evita escribir desde una pestaña con datos desactualizados. */
-  window.addEventListener("pageshow", evento => {
-    if (evento.persisted && vistaActual === "simulacion" &&
-        sesionActiva?.estado === "pendiente") {
-      iniciarActividad();
-      iniciarReloj();
-    }
+  window.addEventListener("pagehide", () => {
+    if (vista === "simulacion" && activa) pausarYGuardar();
   });
 
-  window.addEventListener("storage", evento => {
-    if (evento.key !== CLAVE_DATOS && evento.key !== null) return;
-    if (evento.newValue === contenidoLeido && evento.key !== null) return;
-    almacenamientoBloqueado = true;
-    notificar("Otra pestaña cambió tus datos. Copia tu borrador y recarga.");
-  });
+  window.addEventListener("pageshow", iniciarReloj);
 
-  /* --------------------------------------------------------
-     20. INICIALIZACIÓN
-     -------------------------------------------------------- */
-
+  leerDatos();
   try {
     const guardada = Number(localStorage.getItem(CLAVE_TEXTO));
-
-    if (
-      Number.isFinite(guardada) &&
-      guardada >= 90 &&
-      guardada <= 150
-    ) {
-      escalaTexto = guardada;
-    }
+    if (guardada >= 90 && guardada <= 150) escala = guardada;
   } catch {
-    escalaTexto = 100;
+    escala = 100;
   }
 
-  /*
-    Un cierre inesperado puede dejar una fecha de fin de reloj.
-    Al recuperar la aplicación, se conserva el tiempo restante
-    guardado y se espera a que la práctica se reanude.
-  */
-  datos.sesiones.forEach(sesion => {
-    if (sesion.estado === "pendiente" && sesion.reloj) {
-      sesion.reloj.limite = null;
-    }
-  });
-
-  aplicarEscalaTexto();
-  actualizarPerfilInterfaz();
-  actualizarResumen();
+  aplicarEscala(escala, false);
+  crearPestanas();
+  mostrarPerfil();
+  resumenConfiguracion();
   actualizarChecklist();
 
-  navegar(destinoActual(), false);
+  const destinoInicial = location.hash.slice(1) || "inicio";
+  if (destinoInicial === "simulacion") {
+    const pendiente = sesionesOrdenadas("pendiente")[0];
+    if (pendiente) activa = copiar(pendiente);
+  }
+  navegar(destinoInicial, false);
 })();
