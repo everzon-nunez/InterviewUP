@@ -1,3 +1,166 @@
+"use strict";
+(() => {
+  const boton = document.querySelector("#boton-tema");
+  if (!boton) return;
+
+  const raiz = document.documentElement;
+  const icono = boton.querySelector("span");
+  const clave = "interviewup-tema";
+
+  function aplicarTema(tema) {
+    const esOscuro = tema === "oscuro";
+
+    raiz.dataset.tema = tema;
+    boton.setAttribute("aria-pressed", String(esOscuro));
+    icono.textContent = esOscuro ? "☀" : "☾";
+    boton.title = esOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
+  }
+
+  let temaGuardado;
+  try {
+    temaGuardado = localStorage.getItem(clave);
+  } catch {
+    temaGuardado = null;
+  }
+
+  aplicarTema(temaGuardado === "oscuro" ? "oscuro" : "claro");
+
+  boton.addEventListener("click", () => {
+    const nuevoTema = raiz.dataset.tema === "oscuro" ? "claro" : "oscuro";
+    aplicarTema(nuevoTema);
+
+    try {
+      localStorage.setItem(clave, nuevoTema);
+    } catch {
+      // El tema sigue activo durante esta visita.
+    }
+  });
+})();
+(() => {
+  const dialogo = document.querySelector("#acceso");
+  const formulario = document.querySelector("#acceso-formulario");
+  const nombre = document.querySelector("#acceso-nombre");
+  const correo = document.querySelector("#acceso-correo");
+  const clave = document.querySelector("#acceso-clave");
+  const importar = document.querySelector("#acceso-importar");
+  const mensaje = document.querySelector("#acceso-mensaje");
+  const alternar = document.querySelector("#acceso-alternar");
+  const enviar = formulario.querySelector('[type="submit"]');
+  const claveSesion = "interviewup.sesion.v1";
+  const prefijoCuenta = "interviewup.cuenta.v1.";
+  const datosAnteriores = "interviewup.datos.v1";
+  let registro = false;
+
+  try {
+    const sesion = sessionStorage.getItem(claveSesion);
+    if (sesion && localStorage.getItem(prefijoCuenta + sesion)) {
+      window.interviewUPCuenta = sesion;
+      window.addEventListener("pageshow", (evento) => {
+        if (evento.persisted && sessionStorage.getItem(claveSesion) !== sesion) {
+          location.reload();
+        }
+      });
+      document.querySelector("#cerrar-sesion").addEventListener("click", () => {
+        sessionStorage.removeItem(claveSesion);
+        history.replaceState(null, "", "#inicio");
+        location.reload();
+      });
+      return;
+    }
+  } catch {
+    mensaje.textContent = "Habilita el almacenamiento del navegador para continuar.";
+  }
+
+  dialogo.showModal();
+  dialogo.addEventListener("cancel", (evento) => evento.preventDefault());
+
+  alternar.addEventListener("click", () => {
+    registro = !registro;
+    document.querySelector("#acceso-titulo").textContent = registro ? "Crear cuenta" : "Iniciar sesión";
+    nombre.closest("label").hidden = !registro;
+    nombre.disabled = !registro;
+    nombre.required = registro;
+    clave.autocomplete = registro ? "new-password" : "current-password";
+    clave.minLength = registro ? 8 : 0;
+    clave.value = "";
+    enviar.textContent = registro ? "Crear cuenta" : "Iniciar sesión";
+    alternar.textContent = registro ? "Volver a iniciar sesión" : "Crear una cuenta";
+    mensaje.textContent = "";
+    try {
+      importar.disabled = !registro || !localStorage.getItem(datosAnteriores)
+        || Boolean(localStorage.getItem("interviewup.importacion.v1"));
+    } catch {
+      importar.disabled = true;
+    }
+    importar.checked = false;
+    importar.closest("label").hidden = importar.disabled;
+    (registro ? nombre : correo).focus();
+  });
+
+  async function derivarClave(contrasena, sal) {
+    const material = await crypto.subtle.importKey(
+      "raw", new TextEncoder().encode(contrasena), "PBKDF2", false, ["deriveBits"],
+    );
+    const bits = await crypto.subtle.deriveBits(
+      { name: "PBKDF2", salt: new Uint8Array(sal), iterations: 600000, hash: "SHA-256" },
+      material, 256,
+    );
+    return Array.from(new Uint8Array(bits)).join(",");
+  }
+
+  formulario.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    if (enviar.disabled) return;
+    if (!globalThis.crypto?.subtle) {
+      mensaje.textContent = "Abre InterviewUP desde HTTPS o localhost para usar el acceso.";
+      return;
+    }
+    enviar.disabled = alternar.disabled = true;
+    mensaje.textContent = "Verificando…";
+    const id = encodeURIComponent(correo.value.trim().toLowerCase());
+    const contrasena = clave.value;
+    const nombreCuenta = nombre.value.trim();
+    const deseaImportar = !importar.disabled && importar.checked;
+    const claveCuenta = prefijoCuenta + id;
+
+    try {
+      const cuenta = JSON.parse(localStorage.getItem(claveCuenta));
+      if (registro) {
+        if (cuenta || !nombreCuenta) {
+          mensaje.textContent = cuenta ? "Ya existe una cuenta con ese correo." : "Escribe tu nombre.";
+          return;
+        }
+        const sal = Array.from(crypto.getRandomValues(new Uint8Array(16)));
+        const verificador = await derivarClave(contrasena, sal);
+        if (localStorage.getItem(claveCuenta)) {
+          mensaje.textContent = "Ya existe una cuenta con ese correo.";
+          return;
+        }
+        const importarDatos = deseaImportar && !localStorage.getItem("interviewup.importacion.v1");
+        const datos = importarDatos ? JSON.parse(localStorage.getItem(datosAnteriores)) : null;
+        const perfil = { nombre: nombreCuenta, estudios: "", proyectos: "", experiencias: "", ...datos?.perfil };
+        perfil.nombre ||= nombreCuenta;
+        localStorage.setItem(`${datosAnteriores}.${id}`, JSON.stringify({
+          version: 1, sesiones: [], ...datos, perfil,
+        }));
+        localStorage.setItem(claveCuenta, JSON.stringify({ sal, verificador }));
+        if (importarDatos) localStorage.setItem("interviewup.importacion.v1", id);
+      } else if (!cuenta || await derivarClave(contrasena, cuenta.sal) !== cuenta.verificador) {
+        mensaje.textContent = "Correo o contraseña incorrectos.";
+        return;
+      }
+
+      sessionStorage.setItem(claveSesion, id);
+      history.replaceState(null, "", "#inicio");
+      location.reload();
+    } catch {
+      mensaje.textContent = "No pudimos completar el acceso. Revisa el almacenamiento del navegador e inténtalo de nuevo.";
+    } finally {
+      enviar.disabled = alternar.disabled = false;
+    }
+  });
+})();
+
 // js/main.js
 (() => {
   "use strict";
@@ -10,8 +173,11 @@
     ? Math.round(valores.reduce((total, valor) => total + valor, 0) / valores.length)
     : 0;
 
-  const CLAVE_DATOS = "interviewup.datos.v1";
-  const CLAVE_TEXTO = "interviewup.texto.v1";
+  const cuenta = window.interviewUPCuenta;
+  if (!cuenta) return;
+
+  const CLAVE_DATOS = `interviewup.datos.v1.${cuenta}`;
+  const CLAVE_TEXTO = `interviewup.texto.v1.${cuenta}`;
   const SEGUNDOS_PENSAR = 30;
   const SEGUNDOS_RESPONDER = 120;
   const POR_PAGINA = 12;
@@ -578,7 +744,7 @@ $("formulario-perfil").addEventListener("submit", (evento) => {
       dialogoGuardado.close();
     }, 1800);
   }, 500);
- });
+});
 
   const formularioConfig = $("formulario-configuracion");
 
